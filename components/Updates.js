@@ -3,8 +3,6 @@ import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 
-import colors from '../lib/constants/colors';
-
 import Container from './Container';
 import StyledButton from './StyledButton';
 import StyledUpdate from './StyledUpdate';
@@ -65,7 +63,7 @@ class Updates extends React.Component {
 
     return (
       <div className="Updates">
-        <Container position="relative">
+        <Container position="relative" border="1px solid #e6e8eb" borderRadius={5}>
           {this.state.loading && (
             <LoadingContainer>
               <FormattedMessage id="loading" defaultMessage="loading" />
@@ -77,13 +75,13 @@ class Updates extends React.Component {
                 update={update}
                 collective={collective}
                 compact={true}
-                borderTop={index === 0 ? undefined : 'none'}
+                borderTop={index !== 0 ? '1px solid #e6e8eb' : 'none'}
               />
             </Container>
           ))}
           {updates.length === 0 && (
-            <Container color={colors.darkgray}>
-              <FormattedMessage id="updates.empty" defaultMessage="No updates" />
+            <Container color="black.700" p={4}>
+              <FormattedMessage id="updates.empty" defaultMessage="No Updates" />
             </Container>
           )}
           {updates.length >= 10 && updates.length % 10 === 0 && (

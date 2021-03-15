@@ -18,9 +18,11 @@ import RichTextEditor from '../../RichTextEditor';
 import StyledButton from '../../StyledButton';
 import StyledInputField from '../../StyledInputField';
 import StyledSelect from '../../StyledSelect';
-import { H3, P } from '../../Text';
+import { P } from '../../Text';
+import SettingsTitle from '../SettingsTitle';
 
 import { getSettingsQuery } from './EditCollectivePage';
+import SettingsSectionTitle from './SettingsSectionTitle';
 
 const EXPENSE_POLICY_MAX_LENGTH = 16000; // max in database is ~15,500
 const CONTRIBUTION_POLICY_MAX_LENGTH = 3000; // 600 words * 5 characters average length word
@@ -58,8 +60,7 @@ const messages = defineMessages({
   },
   'contributionPolicy.placeholder': {
     id: 'collective.contributionPolicy.placeholder',
-    defaultMessage:
-      'For example: what type of contributors (like casinos) you do not want donations from, or under what circumstances you might allow certain donations, etc.',
+    defaultMessage: 'E.g. what types of contributions you will and will not accept.',
   },
   'contributionPolicy.error': {
     id: 'collective.contributionPolicy.error',
@@ -71,8 +72,7 @@ const messages = defineMessages({
   },
   'expensePolicy.placeholder': {
     id: 'collective.expensePolicy.placeholder',
-    defaultMessage:
-      'For example: what type of expenses will be approved, any limitations on amounts, what documentation is required, and who to contact with questions.',
+    defaultMessage: 'E.g. approval criteria, limitations, or required documentation.',
   },
   'expensePolicy.error': {
     id: 'collective.expensePolicy.error',
@@ -170,23 +170,25 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
 
   return (
     <Flex flexDirection="column">
-      {error && <MessageBoxGraphqlError error={error} />}
       {!showOnlyExpensePolicy && (
-        <H3 mt={2}>
+        <SettingsTitle>
           <FormattedMessage id="editCollective.menu.policies" defaultMessage="Policies" />
-        </H3>
+        </SettingsTitle>
       )}
+      {error && <MessageBoxGraphqlError error={error} />}
       <form onSubmit={formik.handleSubmit}>
         <Container>
           {!showOnlyExpensePolicy && (
-            <Container>
+            <Container mb={4}>
               <StyledInputField
                 name="contributionPolicy"
                 htmlFor="contributionPolicy"
                 error={formik.errors.contributionPolicy}
                 disabled={isSubmittingPolicies}
-                label={formatMessage(messages['contributionPolicy.label'])}
                 labelProps={{ mb: 2, pt: 2, lineHeight: '18px', fontWeight: 'bold' }}
+                label={
+                  <SettingsSectionTitle>{formatMessage(messages['contributionPolicy.label'])}</SettingsSectionTitle>
+                }
               >
                 {inputProps => (
                   <RichTextEditor
@@ -196,6 +198,7 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
                     error={formik.errors.contributionPolicy}
                     version="simplified"
                     editorMinHeight="20rem"
+                    editorMaxHeight={500}
                     id={inputProps.id}
                     inputName={inputProps.name}
                     onChange={formik.handleChange}
@@ -205,10 +208,10 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
                   />
                 )}
               </StyledInputField>
-              <P fontSize="14px" color="black.600">
+              <P fontSize="14px" lineHeight="18px" color="black.600" mt={2}>
                 <FormattedMessage
                   id="collective.contributionPolicy.description"
-                  defaultMessage="All categorized Financial Contributors are manually classified by the Open Collective team. Only contributors that are thought to be abusing are classified with these categories. Financial Contributors with a good reputation should normally not be affected by this setting."
+                  defaultMessage="Financial Contributors are manually reviewed by the Open Collective team to check for abuse or spam. Financial Contributors with a good reputation should not be affected by this setting."
                 />
               </P>
             </Container>
@@ -219,8 +222,8 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
             htmlFor="expensePolicy"
             error={formik.errors.expensePolicy}
             disabled={isSubmittingPolicies}
-            label={formatMessage(messages['expensePolicy.label'])}
             labelProps={{ mb: 2, pt: 2, lineHeight: '18px', fontWeight: 'bold' }}
+            label={<SettingsSectionTitle>{formatMessage(messages['expensePolicy.label'])}</SettingsSectionTitle>}
           >
             {inputProps => (
               <RichTextEditor
@@ -230,16 +233,18 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
                 error={formik.errors.expensePolicy}
                 version="simplified"
                 editorMinHeight="20rem"
+                editorMaxHeight={500}
                 id={inputProps.id}
                 inputName={inputProps.name}
                 onChange={formik.handleChange}
                 placeholder={formatMessage(messages['expensePolicy.placeholder'])}
                 defaultValue={formik.values.expensePolicy}
                 fontSize="14px"
+                maxHeight={600}
               />
             )}
           </StyledInputField>
-          <P fontSize="14px" color="black.600">
+          <P fontSize="14px" lineHeight="18px" color="black.600" my={2}>
             <FormattedMessage
               id="collective.expensePolicy.description"
               defaultMessage="It can be daunting to file an expense if you're not sure what's allowed. Provide a clear policy to guide expense submitters."
@@ -248,13 +253,13 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
         </Container>
         {hasRejectCategoriesFeature && (
           <Container>
-            <H3 mt={2}>
+            <SettingsSectionTitle mt={4}>
               <FormattedMessage id="editCollective.rejectCategories.header" defaultMessage="Rejected categories" />
-            </H3>
-            <P>
+            </SettingsSectionTitle>
+            <P mb={2}>
               <FormattedMessage
                 id="editCollective.rejectCategories.description"
-                defaultMessage="Select which categories of contributor, if any, you do not wish to receive any contributions from. This will automatically prevent them from being able to become a sponsor of your Collective."
+                defaultMessage="Specify any categories of contributor that you do not wish to accept money from, to automatically prevent these types of contributions. (You can also reject contributions individually using the button on a specific unwanted transaction)"
               />
             </P>
             <StyledSelect
@@ -270,7 +275,7 @@ const Policies = ({ collective, showOnlyExpensePolicy }) => {
             />
           </Container>
         )}
-        <Flex my={3} alignItems="center" justifyContent="center">
+        <Flex mt={5} mb={3} alignItems="center" justifyContent="center">
           <StyledButton
             buttonStyle="primary"
             mx={2}

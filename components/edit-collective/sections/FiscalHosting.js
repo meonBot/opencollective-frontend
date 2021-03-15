@@ -9,13 +9,20 @@ import useKeyboardShortcut, { ENTER_KEY } from '../../../lib/hooks/useKeyboardKe
 import Container from '../../Container';
 import StyledButton from '../../StyledButton';
 import Modal, { ModalBody, ModalFooter, ModalHeader } from '../../StyledModal';
-import { H2, P } from '../../Text';
+import { P } from '../../Text';
+
+import SettingsSectionTitle from './SettingsSectionTitle';
 
 const activateCollectiveAsHostMutation = gql`
   mutation ActivateCollectiveAsHost($id: Int!) {
     activateCollectiveAsHost(id: $id) {
       id
+      currency
       isHost
+      plan {
+        id
+        name
+      }
     }
   }
 `;
@@ -24,7 +31,12 @@ const deactivateCollectiveAsHostMutation = gql`
   mutation DeactivateCollectiveAsHost($id: Int!) {
     deactivateCollectiveAsHost(id: $id) {
       id
+      currency
       isHost
+      plan {
+        id
+        name
+      }
     }
   }
 `;
@@ -168,25 +180,25 @@ const FiscalHosting = ({ collective }) => {
           <FormattedMessage
             id="collective.hostAccount.activate.description"
             defaultMessage={
-              'A fiscal host is a legal entity who holds a Collective’s funds in their bank account, and can generate invoices and receipts for backers and sponsors.'
+              'A Fiscal Host is a legal entity who holds Collective funds in their bank account, manages payouts, and generates invoices and receipts.'
             }
           />
         </P>
       )}
 
       {isHostAccount && (
-        <H2>
-          <FormattedMessage id="DeactivateFiscalhost" defaultMessage={'Deactivating as host'} />
-        </H2>
+        <SettingsSectionTitle>
+          <FormattedMessage id="host.deactivate" defaultMessage="Deactivate as Host" />
+        </SettingsSectionTitle>
       )}
 
       {isHostAccount && (
-        <P>
+        <P mb={2}>
           <FormattedMessage
             values={{ type: collectiveType.toLowerCase() }}
             id="collective.hostAccount.deactivate.description"
             defaultMessage={
-              "After deactivating your {type} as host, you will not be able to host collectives anymore. The profile will remain active as an {type}'s profile."
+              'After deactivating, you will not be able to act as a Host anymore. The profile will remain active as a {type}.'
             }
           />
         </P>
@@ -199,6 +211,7 @@ const FiscalHosting = ({ collective }) => {
           onClick={() => setActivateAsHostModal({ type: 'Activate', show: true })}
           loading={activateAsHostStatus.processing}
           disabled={false}
+          mb={2}
         >
           <FormattedMessage id="collective.activateAsHost" defaultMessage={'Activate as Host'} />
         </StyledButton>
@@ -209,17 +222,20 @@ const FiscalHosting = ({ collective }) => {
           onClick={() => setActivateAsHostModal({ type: 'Deactivate', show: true })}
           loading={activateAsHostStatus.processing}
           disabled={collective.plan.hostedCollectives > 0}
+          mb={2}
         >
           <FormattedMessage id="host.deactivate" defaultMessage={'Deactivate as Host'} />
         </StyledButton>
       )}
 
       {collective.plan.hostedCollectives > 0 && (
-        <P color="rgb(224, 183, 0)">
+        <P color="rgb(224, 183, 0)" my={1}>
           <FormattedMessage
             values={{ hostedCollectives: collective.plan.hostedCollectives }}
             id="collective.hostAccount.deactivate.isHost"
-            defaultMessage={"You can't deactivate hosting while still hosting {hostedCollectives} other collectives."}
+            defaultMessage={
+              'You are currently hosting {hostedCollectives} Collectives. To deactivate, they need to be moved to a different Host or archived.'
+            }
           />
         </P>
       )}
@@ -238,7 +254,7 @@ const FiscalHosting = ({ collective }) => {
             <FormattedMessage
               id="collective.hostAccount.modal.description"
               defaultMessage={
-                'A fiscal host is a legal company or individual who holds a Collective’s funds in their bank account, and can generate invoices and receipts for Financial Contributors.{br}You can think of a fiscal host as an umbrella organization for the Collectives in it.'
+                'A Fiscal Host is a legal entity (company or individual) who holds Collective funds in their bank account, and can generate invoices and receipts for Financial Contributors.{br}Think of a Fiscal Host as an umbrella organization for its Collectives.'
               }
               values={{
                 br: <br />,
@@ -249,13 +265,13 @@ const FiscalHosting = ({ collective }) => {
             {activateAsHostModal.type === 'Activate' && (
               <FormattedMessage
                 id="collective.hostAccount.modal.activate.body"
-                defaultMessage={'Are you sure you want to activate this account as Host?'}
+                defaultMessage={'Are you sure you want to activate this Fiscal Host?'}
               />
             )}
             {activateAsHostModal.type === 'Deactivate' && (
               <FormattedMessage
                 id="collective.hostAccount.modal.deactivate.body"
-                defaultMessage={'Are you sure you want to deactivate this account as Host?'}
+                defaultMessage={'Are you sure you want to deactivate this Fiscal Host?'}
               />
             )}
           </P>
@@ -290,28 +306,28 @@ const FiscalHosting = ({ collective }) => {
       {isHostAccount && (
         <Fragment>
           {!isBudgetActive && collective.type === 'ORGANIZATION' && (
-            <H2>
-              <FormattedMessage id="FiscalHosting.budget.activate" defaultMessage={'Activate Host Budget'} />
-            </H2>
+            <SettingsSectionTitle mt={4}>
+              <FormattedMessage id="FiscalHosting.budget.activate" defaultMessage="Activate Host Budget" />
+            </SettingsSectionTitle>
           )}
 
           {isBudgetActive && (
-            <P>
+            <P mb={2}>
               <FormattedMessage
                 id="FiscalHosting.budget.deactivate.description"
                 defaultMessage={
-                  'Your Host Budget is activated, you can receive financial contributions and manage expenses directly with this Organization.'
+                  'Your Host Budget is activated. It can receive financial contributions and manage expenses.'
                 }
               />
             </P>
           )}
 
           {!isBudgetActive && collective.type === 'ORGANIZATION' && (
-            <P>
+            <P mb={2}>
               <FormattedMessage
                 id="FiscalHosting.budget.activate.description"
                 defaultMessage={
-                  'By activating the Host budget, you will be able to receive financial contributions and manage expenses directly with this Organization.'
+                  'By activating the Host Budget, it will be able to receive financial contributions and manage expenses.'
                 }
               />
             </P>
@@ -323,6 +339,7 @@ const FiscalHosting = ({ collective }) => {
             <StyledButton
               onClick={() => setActivateBudgetModal({ type: 'Activate', show: true })}
               loading={activateBudgetStatus.processing}
+              mb={2}
             >
               <FormattedMessage id="FiscalHosting.budget.activate" defaultMessage={'Activate Host Budget'} />
             </StyledButton>

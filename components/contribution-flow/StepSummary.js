@@ -44,14 +44,14 @@ const Label = styled.span`
 const FeesBreakdown = ({ amount, platformFeePercent, hostFeePercent, paymentMethod, currency }) => {
   const platformFee = amount * (platformFeePercent / 100);
   const hostFee = amount * ((hostFeePercent || 0) / 100);
-  const pmFeeInfo = getPaymentMethodFees(paymentMethod, amount);
+  const pmFeeInfo = getPaymentMethodFees(paymentMethod, amount, currency);
   const netAmountForCollective = amount - platformFee - hostFee - pmFeeInfo.fee;
 
   return (
     <React.Fragment>
       <AmountLine>
         <Label fontWeight={500} color="black.800">
-          <FormattedMessage id="contribution.netAmountForCollective" defaultMessage="Net amount for collective" />
+          <FormattedMessage id="contribution.netAmountForCollective" defaultMessage="Net amount for Collective" />
         </Label>
         <Span fontSize="16px" fontWeight={500} color="black.700">
           {formatCurrency(netAmountForCollective, currency)}
@@ -71,7 +71,7 @@ const FeesBreakdown = ({ amount, platformFeePercent, hostFeePercent, paymentMeth
       {Boolean(hostFeePercent) && (
         <AmountLine>
           <Label color="black.500">
-            <FormattedMessage id="contribution.hostFeePercent" defaultMessage="Fiscal host fee" />
+            <FormattedMessage id="contribution.hostFeePercent" defaultMessage="Fiscal Host fee" />
             {` (-${hostFeePercent}%)`}
           </Label>
           <Span fontSize="16px" color="black.500">
@@ -109,7 +109,7 @@ FeesBreakdown.propTypes = {
   platformFeePercent: PropTypes.object,
   hostFeePercent: PropTypes.object,
   paymentMethod: PropTypes.object,
-  currency: PropTypes.object,
+  currency: PropTypes.string,
 };
 
 FeesBreakdown.defaultProps = {
@@ -129,12 +129,13 @@ ClickableLabel.defaultProps = {
 
 /** Add missing fields to taxInfo and calculate tax amount */
 const prepareTaxInfo = (taxes, userTaxInfo, amount, quantity, taxPercentage, hasForm) => {
+  const isCountryRequired = taxes[0]?.type === TaxType.VAT;
   return {
     ...userTaxInfo,
     taxType: taxes[0]?.type,
     percentage: taxPercentage,
     amount: Math.round(amount * quantity * (taxPercentage / 100)),
-    isReady: Boolean(!hasForm && (!amount || get(userTaxInfo, 'countryISO'))),
+    isReady: Boolean(!hasForm && (!amount || !isCountryRequired || get(userTaxInfo, 'countryISO'))),
   };
 };
 
@@ -149,7 +150,7 @@ const getTaxPerentageForProfile = (taxes, tierType, hostCountry, collectiveCount
   }
 };
 
-const VATInputs = ({ collective, taxInfo, dispatchChange, setFormState, formState }) => {
+const VATInputs = ({ currency, taxInfo, dispatchChange, setFormState, formState }) => {
   const hasConfirmedTaxID = taxInfo.number && taxInfo.isReady;
   const vatShortLabel = <FormattedMessage id="tax.vatShort" defaultMessage="VAT" />;
 
@@ -275,7 +276,7 @@ const VATInputs = ({ collective, taxInfo, dispatchChange, setFormState, formStat
           )}
         </Flex>
         <Span fontSize="16px" pt={2}>
-          {taxInfo.isReady && `+ ${formatCurrency(taxInfo.amount, collective.currency)}`}
+          {taxInfo.isReady && `+ ${formatCurrency(taxInfo.amount, currency)}`}
         </Span>
       </AmountLine>
     </React.Fragment>
@@ -285,7 +286,7 @@ const VATInputs = ({ collective, taxInfo, dispatchChange, setFormState, formStat
 VATInputs.propTypes = {
   formState: PropTypes.object,
   taxInfo: PropTypes.object,
-  collective: PropTypes.object,
+  currency: PropTypes.string,
   dispatchChange: PropTypes.func,
   setFormState: PropTypes.func,
 };
@@ -309,6 +310,8 @@ const StepSummary = ({
   const tierType = tier?.type;
   const hostCountry = get(collective.host, 'location.country');
   const collectiveCountry = collective.location.country || get(collective.parent, 'location.country');
+
+  const currency = tier?.amount.currency || collective.currency;
 
   const [formState, setFormState] = useState({ isEnabled: false, error: false });
   const taxPercentage = getTaxPerentageForProfile(taxes, tierType, hostCountry, collectiveCountry, data);
@@ -340,7 +343,7 @@ const StepSummary = ({
         <FeesBreakdown
           platformFeePercent={collective.platformFeePercent}
           hostFeePercent={collective.hostFeePercent}
-          currency={collective.currency}
+          currency={currency}
           paymentMethod={paymentMethod}
           amount={amount}
         />
@@ -358,11 +361,7 @@ const StepSummary = ({
               <FormattedMessage id="contribution.itemPrice" defaultMessage="Item price" />
             </Label>
             <Span fontSize="16px">
-              {amount ? (
-                formatCurrency(amount, collective.currency)
-              ) : (
-                <FormattedMessage id="Amount.Free" defaultMessage="Free" />
-              )}
+              {amount ? formatCurrency(amount, currency) : <FormattedMessage id="Amount.Free" defaultMessage="Free" />}
             </Span>
           </AmountLine>
         </React.Fragment>
@@ -371,13 +370,13 @@ const StepSummary = ({
         <Label fontWeight="bold">
           <FormattedMessage id="contribution.your" defaultMessage="Your contribution" />
         </Label>
-        <Span fontSize="16px">{formatCurrency(amount * quantity, collective.currency)}</Span>
+        <Span fontSize="16px">{formatCurrency(amount * quantity, currency)}</Span>
       </AmountLine>
       {applyTaxes && amount > 0 && (
         <div>
           {taxes.some(({ type }) => type === TaxType.VAT) && (
             <VATInputs
-              collective={collective}
+              currency={currency}
               dispatchChange={dispatchChange}
               setFormState={setFormState}
               formState={formState}
@@ -390,7 +389,7 @@ const StepSummary = ({
                 GST ({taxPercentage}%)
               </Span>
               <Span fontSize="16px" pt={2}>
-                {`+ ${formatCurrency(taxInfo.amount, collective.currency)}`}
+                {`+ ${formatCurrency(taxInfo.amount, currency)}`}
               </Span>
             </AmountLine>
           )}
@@ -402,7 +401,7 @@ const StepSummary = ({
           <FormattedMessage id="contribution.total" defaultMessage="TOTAL" />
         </Label>
         <Span fontWeight="bold" fontSize="16px" color={taxInfo.isReady ? 'black.800' : 'black.400'}>
-          {formatCurrency(amount * quantity + (taxInfo.isReady ? taxInfo.amount : 0), collective.currency)}
+          {formatCurrency(amount * quantity + (taxInfo.isReady ? taxInfo.amount : 0), currency)}
         </Span>
       </AmountLine>
     </Box>
@@ -422,7 +421,6 @@ StepSummary.propTypes = {
     }),
   }),
   collective: PropTypes.shape({
-    /** The currency used for the transaction */
     currency: PropTypes.string.isRequired,
     /** Host fees, as an integer percentage */
     hostFeePercent: PropTypes.number,
@@ -458,6 +456,9 @@ StepSummary.propTypes = {
   /** Type of the tier. Used to check if taxes apply */
   tier: PropTypes.shape({
     type: PropTypes.oneOf(tiersTypes),
+    amount: PropTypes.shape({
+      currency: PropTypes.string,
+    }),
   }),
   /** Payment method, used to generate label and payment fee */
   paymentMethod: PropTypes.shape({

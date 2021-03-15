@@ -343,11 +343,8 @@ class TierPage extends Component {
                 <Box width={1}>
                   {isPassed ? (
                     <P textAlign="center">
-                      <FormattedMessage id="Tier.Past" defaultMessage="This contribution type is not active anymore." />{' '}
-                      <Link
-                        route="contribute"
-                        params={{ collectiveSlug: collective.slug, verb: 'contribute', redirect }}
-                      >
+                      <FormattedMessage id="Tier.Past" defaultMessage="This tier is not active anymore." />{' '}
+                      <Link href={{ pathname: `/${collective.slug}/contribute`, query: { redirect } }}>
                         <FormattedMessage
                           id="createOrder.backToTier"
                           defaultMessage="View all the other ways to contribute"
@@ -357,13 +354,9 @@ class TierPage extends Component {
                     </P>
                   ) : (
                     <Link
-                      route="orderCollectiveTierNew"
-                      params={{
-                        verb: 'contribute',
-                        tierId: tier.id,
-                        tierSlug: tier.slug,
-                        collectiveSlug: collective.slug,
-                        redirect,
+                      href={{
+                        pathname: `/${collective.slug}/contribute/${tier.slug}-${tier.id}/checkout`,
+                        query: { redirect },
                       }}
                     >
                       <StyledButton buttonStyle="primary" width={1} my={4} minWidth={128} data-cy="ContributeBtn">

@@ -18,6 +18,7 @@ import CollectivePicker, {
 } from '../CollectivePicker';
 import CollectivePickerAsync from '../CollectivePickerAsync';
 import { Box, Flex } from '../Grid';
+import I18nAddressFields from '../I18nAddressFields';
 import InputTypeCountry from '../InputTypeCountry';
 import StyledButton from '../StyledButton';
 import StyledHr from '../StyledHr';
@@ -59,6 +60,7 @@ const EMPTY_ARRAY = [];
 const setLocationFromPayee = (formik, payee) => {
   formik.setFieldValue('payeeLocation.country', payee?.location?.country || null);
   formik.setFieldValue('payeeLocation.address', payee?.location?.address || '');
+  formik.setFieldValue('payeeLocation.structured', payee?.location?.structured);
 };
 
 const getPayoutMethodsFromPayee = payee => {
@@ -81,7 +83,7 @@ const getPayoutMethodsFromPayee = payee => {
 
   // If the Payee is in the "Collective" family (Collective, Fund, Event, Project)
   // Then the Account Balance should be its only option
-  if (payee && AccountTypesWithHost.includes(payee.type)) {
+  if (payee && AccountTypesWithHost.includes(payee.type) && payee.id !== payee.host?.id) {
     filteredPms = filteredPms.filter(pm => pm.type === PayoutMethodType.ACCOUNT_BALANCE);
   }
 
@@ -102,6 +104,7 @@ const ExpenseFormPayeeStep = ({
   collective,
   onCancel,
   onNext,
+  onInvite,
   isOnBehalf,
   loggedInAccount,
 }) => {
@@ -114,7 +117,7 @@ const ExpenseFormPayeeStep = ({
       (values.type === expenseTypes.RECEIPT ||
         (values.payoutMethod && values.payeeLocation?.country && values.payeeLocation?.address));
 
-  const allPayoutMethods = React.useMemo(() => getPayoutMethodsFromPayee(values.payee, collective), [values.payee]);
+  const allPayoutMethods = React.useMemo(() => getPayoutMethodsFromPayee(values.payee), [values.payee]);
   const onPayoutMethodRemove = React.useCallback(() => refreshPayoutProfile(formik, payoutProfiles), [payoutProfiles]);
   const setPayoutMethod = React.useCallback(({ value }) => formik.setFieldValue('payoutMethod', value), []);
   const requiresAddress =
@@ -181,6 +184,7 @@ const ExpenseFormPayeeStep = ({
           customOptionsPosition={CUSTOM_OPTIONS_POSITION.BOTTOM}
           getDefaultOptions={build => values.payee && build(values.payee)}
           invitable
+          onInvite={onInvite}
           LoggedInUser={loggedInAccount}
           addLoggedInUserAsAdmin
           excludeAdminFields
@@ -189,7 +193,10 @@ const ExpenseFormPayeeStep = ({
     : ({ id }) => (
         <CollectivePicker
           inputId={id}
-          collectives={payoutProfiles}
+          customOptions={[
+            { options: myself, label: 'Myself' },
+            { options: myorganizations, label: 'My Organizations' },
+          ]}
           getDefaultOptions={build => values.payee && build(values.payee)}
           data-cy="select-expense-payee"
           collective={values.payee}
@@ -234,7 +241,9 @@ const ExpenseFormPayeeStep = ({
                       <InputTypeCountry
                         data-cy="payee-country"
                         inputId={id}
-                        onChange={value => formik.setFieldValue(field.name, value)}
+                        onChange={value => {
+                          formik.setFieldValue(field.name, value);
+                        }}
                         value={field.value}
                         error={error}
                       />
@@ -242,28 +251,33 @@ const ExpenseFormPayeeStep = ({
                   </StyledInputField>
                 )}
               </FastField>
-              <FastField name="payeeLocation.address">
-                {({ field }) => (
-                  <StyledInputField
-                    name={field.name}
-                    label={formatMessage(msg.address)}
-                    labelFontSize="13px"
-                    error={formatFormErrorMessage(intl, errors.payeeLocation?.address)}
-                    required
-                    mt={3}
-                  >
-                    {inputProps => (
-                      <StyledTextarea
-                        {...inputProps}
-                        {...field}
-                        minHeight={100}
-                        data-cy="payee-address"
-                        placeholder="P. Sherman 42&#10;Wallaby Way&#10;Sydney"
-                      />
-                    )}
-                  </StyledInputField>
-                )}
-              </FastField>
+              {values.payeeLocation?.structured || !values.payeeLocation?.address ? (
+                <I18nAddressFields
+                  prefix="payeeLocation.structured"
+                  selectedCountry={values.payeeLocation?.country}
+                  onCountryChange={addressObject => {
+                    if (addressObject) {
+                      formik.setFieldValue('payeeLocation.structured', addressObject);
+                    }
+                  }}
+                />
+              ) : (
+                <FastField name="payeeLocation.address">
+                  {({ field }) => (
+                    <StyledInputField name={field.name} label="Address" labelFontSize="13px" required mt={3}>
+                      {inputProps => (
+                        <StyledTextarea
+                          {...inputProps}
+                          {...field}
+                          data-cy="payee-address"
+                          minHeight={100}
+                          placeholder="P. Sherman 42&#10;Wallaby Way&#10;Sydney"
+                        />
+                      )}
+                    </StyledInputField>
+                  )}
+                </FastField>
+              )}
               <FastField name="invoiceInfo">
                 {({ field }) => (
                   <StyledInputField
@@ -369,8 +383,19 @@ const ExpenseFormPayeeStep = ({
               data-cy="expense-next"
               buttonStyle="primary"
               disabled={!stepOneCompleted}
-              onClick={() => {
-                onNext?.();
+              onClick={async () => {
+                const allErrors = await formik.validateForm();
+                // Get the relevant errors for the payee step, ignores data.currency in the because it is related to expense amount.
+                const errors = omit(pick(allErrors, ['payee', 'payoutMethod', 'payeeLocation']), [
+                  'payoutMethod.data.currency',
+                ]);
+                if (isEmpty(flattenObjectDeep(errors))) {
+                  onNext?.();
+                } else {
+                  // We use set touched here to display errors on fields that are not dirty.
+                  formik.setTouched(errors);
+                  formik.setErrors(errors);
+                }
               }}
             >
               <FormattedMessage id="Pagination.Next" defaultMessage="Next" />
@@ -388,6 +413,7 @@ ExpenseFormPayeeStep.propTypes = {
   payoutProfiles: PropTypes.array,
   onCancel: PropTypes.func,
   onNext: PropTypes.func,
+  onInvite: PropTypes.func,
   isOnBehalf: PropTypes.bool,
   loggedInAccount: PropTypes.object,
   collective: PropTypes.shape({

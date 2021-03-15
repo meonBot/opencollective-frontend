@@ -14,8 +14,10 @@ import PayoutBankInformationForm from '../../expenses/PayoutBankInformationForm'
 import { Box, Flex } from '../../Grid';
 import Loading from '../../Loading';
 import StyledButton from '../../StyledButton';
-import { H3, H4, P } from '../../Text';
+import { P } from '../../Text';
 import UpdateBankDetailsForm from '../UpdateBankDetailsForm';
+
+import SettingsSectionTitle from './SettingsSectionTitle';
 
 const { TW_API_COLLECTIVE_SLUG } = process.env;
 
@@ -32,11 +34,11 @@ const hostQuery = gqlV2/* GraphQL */ `
         service
       }
       plan {
+        id
         addedFunds
         addedFundsLimit
         bankTransfers
         bankTransfersLimit
-        hostDashboard
         hostedCollectives
         hostedCollectivesLimit
         manualPayments
@@ -104,7 +106,7 @@ const BankTransfer = props => {
     useStructuredForm && (existingPayoutMethodMatchesCurrency || isConnectedToStripe) && data.host.currency;
 
   const initialValues = {
-    ...(existingPayoutMethod || { data: { currency: fixedCurrency } }),
+    ...(existingPayoutMethod || { data: { currency: fixedCurrency || data.host.currency } }),
     instructions,
   };
 
@@ -112,16 +114,16 @@ const BankTransfer = props => {
     <Flex className="EditPaymentMethods" flexDirection="column">
       {showEditManualPaymentMethod && (
         <Fragment>
-          <H4 mt={2}>
+          <SettingsSectionTitle>
             <FormattedMessage id="editCollective.receivingMoney.bankTransfers" defaultMessage="Bank Transfers" />
-          </H4>
+          </SettingsSectionTitle>
 
           <Box>
             <Container fontSize="12px" mt={2} color="black.600" textAlign="left">
               {data.host.plan.manualPayments ? (
                 <FormattedMessage
                   id="paymentMethods.manual.add.info"
-                  defaultMessage="To receive donations  directly on your bank account on behalf of the collectives that you are hosting"
+                  defaultMessage="Define instructions for contributions via bank transfer. When funds arrive, you can mark them as confirmed to credit the budget balance."
                 />
               ) : (
                 <FormattedMessage
@@ -153,12 +155,12 @@ const BankTransfer = props => {
               }}
             >
               {existingManualPaymentMethod ? (
-                <FormattedMessage id="paymentMethods.manual.edit" defaultMessage="Edit your bank account details" />
+                <FormattedMessage id="paymentMethods.manual.edit" defaultMessage="Edit bank details" />
               ) : (
                 <Fragment>
                   <Add size="1em" />
                   {'  '}
-                  <FormattedMessage id="paymentMethods.manual.add" defaultMessage="Add your bank account details" />
+                  <FormattedMessage id="paymentMethods.manual.add" defaultMessage="Set bank details" />
                 </Fragment>
               )}
             </StyledButton>
@@ -184,6 +186,10 @@ const BankTransfer = props => {
                 value: instructions,
                 account: { slug: props.collectiveSlug },
               },
+              refetchQueries: [
+                { query: hostQuery, context: API_V2_CONTEXT, variables: { slug: props.collectiveSlug } },
+              ],
+              awaitRefetchQueries: true,
             });
             setSubmitting(false);
             setShowForm(false);
@@ -193,29 +199,26 @@ const BankTransfer = props => {
         >
           {({ handleSubmit, isSubmitting, setFieldValue, values }) => (
             <form onSubmit={handleSubmit}>
-              <H3>
+              <SettingsSectionTitle>
                 <FormattedMessage id="paymentMethods.manual.HowDoesItWork" defaultMessage="How does it work?" />
-              </H3>
+              </SettingsSectionTitle>
               <Flex flexDirection={['column', 'row']} alignItems={['center', 'start']}>
-                <P>
+                <P mr={2}>
                   <FormattedMessage
                     id="paymentMethod.manual.edit.description"
-                    defaultMessage='Contributors will be able to choose "Bank Transfer" as a payment method when they check out. The instructions to make the wire transfer will be emailed to them along with a unique order id. Once you received the money, you will be able to mark the corresponding pending order as paid in your host dashboard.'
+                    defaultMessage='Contributors can choose "Bank Transfer" as a payment method at checkout and instructions will be autmatically emailed to them. Once received, you can mark the transaction as confirmed to credit the budget on Open Collective.'
                   />
                 </P>
                 <img src="/static/images/ManualPaymentMethod-BankTransfer.png" width={350} />
               </Flex>
-              <H3>
-                <FormattedMessage id="menu.pricing" defaultMessage="Pricing" />
-              </H3>
               {useStructuredForm && (
                 <React.Fragment>
-                  <H3>
+                  <SettingsSectionTitle mt={4}>
                     <FormattedMessage
                       id="paymentMethods.manual.bankInfo.title"
                       defaultMessage="Add your bank account information"
                     />
-                  </H3>
+                  </SettingsSectionTitle>
                   <Flex mr={2} flexDirection="column" width={[1, 0.5]}>
                     <PayoutBankInformationForm
                       host={{ slug: TW_API_COLLECTIVE_SLUG }}
@@ -229,12 +232,9 @@ const BankTransfer = props => {
                 </React.Fragment>
               )}
 
-              <H3 my="1.5rem">
-                <FormattedMessage
-                  id="paymentMethods.manual.instructions.title"
-                  defaultMessage="Define the instructions to make a bank transfer to your account"
-                />
-              </H3>
+              <SettingsSectionTitle mt={4}>
+                <FormattedMessage id="paymentMethods.manual.instructions.title" defaultMessage="Define instructions" />
+              </SettingsSectionTitle>
               <Box mr={2} flexGrow={1}>
                 <UpdateBankDetailsForm
                   value={instructions}

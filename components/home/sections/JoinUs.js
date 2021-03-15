@@ -102,7 +102,7 @@ const JoinUs = ({ page }) => (
       </Box>
 
       <Container ml={[null, null, null, 3, 6]}>
-        <Link route={page === 'becomeAHost' ? '/organizations/new' : '/create'}>
+        <Link href={page === 'becomeAHost' ? '/organizations/new' : '/create'}>
           <Wrapper
             color="black.900"
             className="linkWrapper"
@@ -134,7 +134,7 @@ const JoinUs = ({ page }) => (
           </Wrapper>
         </Link>
 
-        <Link route="/hiring">
+        <Link href="/hiring">
           <Wrapper color="black.900" my={4} width={['288px', '648px', '569px', null, '594px']} className="linkWrapper">
             <Container mb={2} width={['192px', 1]}>
               <H3
@@ -149,7 +149,7 @@ const JoinUs = ({ page }) => (
               </H3>
               <Box width={[null, '460px']}>
                 <P fontSize="15px" lineHeight="23px" letterSpacing="-0.12px" color="black.700" display={[null, 'none']}>
-                  <FormattedMessage id="home.joinUsSection.joinTeam" defaultMessage="Know more about our impact." />
+                  <FormattedMessage id="home.joinUsSection.joinTeam" defaultMessage="Learn more about our impact." />
                 </P>
                 <P
                   fontSize="15px"
@@ -160,7 +160,7 @@ const JoinUs = ({ page }) => (
                 >
                   <FormattedMessage
                     id="home.joinUsSection.ourStories"
-                    defaultMessage="Open Collective aims to foster transparency and sustainability in communities around the world, see how you could participate."
+                    defaultMessage="Open Collective aims to foster transparency and sustainability in communities around the world. See how you can participate."
                   />
                 </P>
               </Box>

@@ -5,15 +5,16 @@ import { Slack } from '@styled-icons/fa-brands/Slack';
 import { Twitter } from '@styled-icons/fa-brands/Twitter';
 import { Blog } from '@styled-icons/icomoon/Blog';
 import { Mail } from '@styled-icons/octicons/Mail';
+import { truncate } from 'lodash';
 import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 import styled from 'styled-components';
 
 import languages from '../lib/constants/locales';
-import { Link } from '../server/pages';
 
 import TranslateIcon from './icons/TranslateIcon';
 import Container from './Container';
 import { Box, Flex } from './Grid';
+import Link from './Link';
 import ListItem from './ListItem';
 import StyledLink from './StyledLink';
 import StyledSelect from './StyledSelect';
@@ -65,7 +66,7 @@ const messages = defineMessages({
   },
   'platform.useCases': {
     id: 'platform.useCases',
-    defaultMessage: 'Use Cases',
+    defaultMessage: 'Use cases',
   },
   'platform.signup': {
     id: 'platform.signup',
@@ -73,7 +74,7 @@ const messages = defineMessages({
   },
   'platform.login': {
     id: 'platform.login',
-    defaultMessage: 'Login',
+    defaultMessage: 'Log in',
   },
   join: {
     id: 'join',
@@ -89,7 +90,7 @@ const messages = defineMessages({
   },
   'join.findAFiscalHost': {
     id: 'join.findAFiscalHost',
-    defaultMessage: 'Find a fiscal host',
+    defaultMessage: 'Find a Fiscal Host',
   },
   'join.becomeASponsor': {
     id: 'join.becomeASponsor',
@@ -97,7 +98,7 @@ const messages = defineMessages({
   },
   'join.becomeAHost': {
     id: 'join.becomeAHost',
-    defaultMessage: 'Become a host',
+    defaultMessage: 'Become a Host',
   },
   community: {
     id: 'community',
@@ -177,7 +178,7 @@ const switchLanguage = key => {
   window.scrollTo(0, 0);
 };
 
-const FooterContainer = styled.div.attrs({
+const FooterContainer = styled.footer.attrs({
   id: 'footer',
 })`
   display: flex;
@@ -189,9 +190,8 @@ const FooterContainer = styled.div.attrs({
   padding: 1rem;
 `;
 
-const Footer = () => {
-  const intl = useIntl();
-  const languageOptions = Object.keys(languages).map(key => {
+const generateLanguageOptions = () => {
+  return Object.keys(languages).map(key => {
     const language = languages[key];
     return {
       value: key,
@@ -204,15 +204,21 @@ const Footer = () => {
           lineHeight="18px"
           fontWeight="500"
           letterSpacing="-0.04px"
+          title={`${language.name} - ${language.nativeName} (${language.completion})`}
         >
           <Span fontSize="24px">{language.flag}</Span>&nbsp;
           <Span whiteSpace="nowrap" ml={1}>
-            {language.name} - {language.nativeName} ({language.completion})
+            {truncate(`${language.name} - ${language.nativeName}`, { length: 23 })} ({language.completion})
           </Span>
         </Flex>
       ),
     };
   });
+};
+
+const Footer = () => {
+  const intl = useIntl();
+  const languageOptions = React.useMemo(generateLanguageOptions);
   const defaultLanguage = languageOptions.find(language => language.value === intl.locale);
 
   return (
@@ -330,10 +336,10 @@ const Footer = () => {
             <SocialLink href="https://github.com/opencollective" aria-label="Open Collective Github link">
               <Github size={16} />
             </SocialLink>
-            <SocialLink href="https://slack.opencollective.com" aria-label="Open Collective Slack Channel link">
+            <SocialLink href="https://slack.opencollective.com" aria-label="Open Collective Slack link">
               <Slack size={16} />
             </SocialLink>
-            <SocialLink href="mailto:info@opencollective.com" aria-label="Email to Open Collective link">
+            <SocialLink href="mailto:info@opencollective.com" aria-label="Open Collective Email link">
               <Mail size={16} />
             </SocialLink>
           </Container>
@@ -365,8 +371,8 @@ const Footer = () => {
                 {Object.keys(navigation[key]).map(item => (
                   <ListItem key={item} textAlign={['center', 'left']} mb={2}>
                     {navigation[key][item][0] === '/' ? (
-                      <Link route={navigation[key][item]} passHref>
-                        <MenuLink>
+                      <Link href={navigation[key][item]}>
+                        <MenuLink as={Container}>
                           {messages[`${key}.${item}`] ? intl.formatMessage(messages[`${key}.${item}`]) : item}
                         </MenuLink>
                       </Link>

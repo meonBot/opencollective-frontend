@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { isNil } from 'lodash';
+import { isEmpty, isNil } from 'lodash';
+import { withRouter } from 'next/router';
 import { FormattedMessage, useIntl } from 'react-intl';
 
 import { hostIsTaxDeductibeInTheUs } from '../../lib/collective.lib';
@@ -9,7 +10,6 @@ import { AmountTypes, TierTypes } from '../../lib/constants/tiers-types';
 import { formatCurrency } from '../../lib/currency-utils';
 import { i18nInterval } from '../../lib/i18n/interval';
 import { getTierMinAmount, getTierPresets } from '../../lib/tier-utils';
-import { Router } from '../../server/pages';
 
 import { Box, Flex } from '../../components/Grid';
 import StyledButtonSet from '../../components/StyledButtonSet';
@@ -27,7 +27,7 @@ import FeesOnTopInput from './FeesOnTopInput';
 import TierCustomFields from './TierCustomFields';
 import { getTotalAmount } from './utils';
 
-const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
+const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop, router }) => {
   const intl = useIntl();
   const amount = data?.amount;
   const getDefaultOtherAmountSelected = () => isNil(amount) || !presets?.includes(amount);
@@ -41,6 +41,12 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
     onChange({ stepDetails: { ...data, [field]: value }, stepSummary: null });
   };
 
+  const customFields = [
+    ...(tier?.customFields || []),
+    ...(collective.host?.settings?.contributionFlow?.customFields || []),
+  ];
+  const currency = tier?.amount.currency || collective.currency;
+
   return (
     <Box width={1}>
       {(!tier || tier.amountType === AmountTypes.FLEXIBLE) && (
@@ -52,6 +58,8 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
           items={[null, INTERVALS.month, INTERVALS.year]}
           selected={data?.interval || null}
           buttonProps={{ px: 2, py: '5px' }}
+          role="group"
+          aria-label="Amount types"
           onChange={interval => {
             if (tier) {
               setTemporaryInterval(interval);
@@ -71,7 +79,7 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
       {!isFixedContribution ? (
         <Box mb="30px">
           <StyledAmountPicker
-            currency={collective.currency}
+            currency={currency}
             presets={presets}
             otherAmountDisplay="button"
             value={isOtherAmountSelected ? OTHER_AMOUNT_KEY : data?.amount}
@@ -89,9 +97,8 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
               <StyledInputAmount
                 name="custom-amount"
                 type="number"
-                currency={collective.currency}
+                currency={currency}
                 value={data?.amount || null}
-                placeholder="---"
                 width={1}
                 min={minAmount}
                 currencyDisplay="full"
@@ -105,10 +112,10 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
                 <Flex fontSize="14px" color="black.800" flexDirection="column" alignItems="flex-end" mt={1}>
                   <FormattedMessage
                     id="contribution.minimumAmount"
-                    defaultMessage="The minimum amount is: {minAmount} {currency}"
+                    defaultMessage="Minimum amount: {minAmount} {currency}"
                     values={{
-                      minAmount: formatCurrency(minAmount, collective.currency),
-                      currency: collective.currency,
+                      minAmount: formatCurrency(minAmount, currency),
+                      currency,
                     }}
                   />
                 </Flex>
@@ -120,18 +127,15 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
         <Box mb={3}>
           <FormattedMessage
             id="contribute.tierDetails"
-            defaultMessage="You’ll contribute with the amount of {amount}{interval, select, month { monthly} year { yearly} other {}}."
+            defaultMessage="You’ll contribute {amount}{interval, select, month { monthly} year { yearly} other {}}."
             values={{
               interval: tier.interval,
-              amount: <FormattedMoneyAmount amount={getTotalAmount(data)} currency={collective.currency} />,
+              amount: <FormattedMoneyAmount amount={getTotalAmount(data)} currency={currency} />,
             }}
           />
         </Box>
       ) : !hasQuantity ? (
-        <FormattedMessage
-          id="contribute.freeTier"
-          defaultMessage="This is a free tier, you can submit your order directly."
-        />
+        <FormattedMessage id="contribute.freeTier" defaultMessage="This is a free tier." />
       ) : null}
 
       {hasQuantity && (
@@ -186,7 +190,7 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
           <P fontSize="14px" lineHeight="20px" fontStyle="italic" color="black.500" letterSpacing="0em">
             <FormattedMessage
               id="platformFee.taxDeductible"
-              defaultMessage="This Collective's Fiscal Host is a registered 501 c(3) non-profit organization. Your contribution will be tax-deductible to the extent allowed by the law."
+              defaultMessage="This Collective's Fiscal Host is a registered 501(c)(3) non-profit organization. Your contribution will be tax-deductible in the US, to the extent allowed by the law."
             />
           </P>
           <StyledHr borderColor="black.300" mt={16} mb={32} />
@@ -195,21 +199,22 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
       {showFeesOnTop && (
         <Box mt={28}>
           <FeesOnTopInput
-            currency={collective.currency}
+            currency={currency}
             amount={data?.amount}
             fees={data?.platformContribution}
             interval={data?.interval}
+            quantity={data?.quantity}
             onChange={value => dispatchChange('platformContribution', value)}
           />
         </Box>
       )}
-      {tier?.customFields && (
+      {!isEmpty(customFields) && (
         <Box mt={28}>
           <H5 fontSize="20px" fontWeight="normal" color="black.800">
             <FormattedMessage id="OtherInfo" defaultMessage="Other information" />
           </H5>
           <TierCustomFields
-            fields={tier.customFields}
+            fields={customFields}
             data={data?.customData}
             onChange={customData => dispatchChange('customData', customData)}
           />
@@ -223,11 +228,7 @@ const StepDetails = ({ onChange, data, collective, tier, showFeesOnTop }) => {
           onConfirm={() => {
             dispatchChange('interval', temporaryInterval);
             setTemporaryInterval(undefined);
-            Router.pushRoute('orderCollectiveNew', {
-              collectiveSlug: collective.slug,
-              verb: 'donate',
-              step: 'details',
-            });
+            router.push(`/${collective.slug}/donate/details`);
           }}
         />
       )}
@@ -260,12 +261,14 @@ StepDetails.propTypes = {
     type: PropTypes.oneOf(Object.values(TierTypes)),
     customFields: PropTypes.array,
     amount: PropTypes.shape({
+      currency: PropTypes.string,
       valueInCents: PropTypes.number,
     }),
     minAmount: PropTypes.shape({
       valueInCents: PropTypes.number,
     }),
   }),
+  router: PropTypes.object,
 };
 
-export default StepDetails;
+export default withRouter(StepDetails);

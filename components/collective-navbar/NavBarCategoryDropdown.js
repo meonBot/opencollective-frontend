@@ -11,6 +11,7 @@ import { Box, Flex } from '../Grid';
 import Link from '../Link';
 import { Dropdown, DropdownArrow, DropdownContent } from '../StyledDropdown';
 import StyledLink from '../StyledLink';
+import { Span } from '../Text';
 
 import aboutNavbarIcon from '../../public/static/images/collective-navigation/CollectiveNavbarIconAbout.png';
 import budgetNavbarIcon from '../../public/static/images/collective-navigation/CollectiveNavbarIconBudget.png';
@@ -35,24 +36,27 @@ const IconIllustration = styled.img.attrs({ alt: '' })`
 const CategoryContainer = styled(StyledLink).attrs({ px: [1, 3, 0] })`
   display: block;
   width: 100%;
-  font-size: 14px;
-  line-height: 16px;
-  text-decoration: none;
-  white-space: nowrap;
-  color: ${themeGet('colors.black.700')};
 
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  font-weight: 500;
-
-  &:focus {
-    color: ${themeGet('colors.primary.700')};
+  span {
+    font-size: 14px;
+    line-height: 16px;
     text-decoration: none;
+    white-space: nowrap;
+    color: ${themeGet('colors.black.800')};
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
   }
 
-  &:hover {
-    color: ${themeGet('colors.primary.400')};
+  &:focus,
+  &:hover,
+  &:focus span,
+  &:hover span {
     text-decoration: none;
+    font-weight: 700;
+    outline: 0;
+    letter-spacing: 0.0525em; /** To compensate the space taken by the font-weight difference */
+    color: ${themeGet('colors.black.800')};
   }
 
   &::after {
@@ -69,9 +73,6 @@ const CategoryContainer = styled(StyledLink).attrs({ px: [1, 3, 0] })`
   ${props =>
     props.isSelected &&
     css`
-      color: #090a0a;
-      font-weight: 500;
-
       @media (min-width: 64em) {
         &::after {
           width: 100%;
@@ -120,6 +121,11 @@ const MenuItem = styled('li')`
     letter-spacing: -0.4px;
     outline: none;
 
+    &:hover,
+    &:focus {
+      text-decoration: underline;
+    }
+
     &:not(:hover) {
       color: #313233;
     }
@@ -146,12 +152,31 @@ const getLinkProps = (useAnchor, collective, category) => {
   if (useAnchor) {
     return { href: anchor };
   } else {
-    return { as: Link, route: `/${collective.slug}${anchor}` };
+    return { as: Link, href: `/${collective.slug}${anchor}` };
   }
 };
 
-const NavBarCategoryDropdown = ({ useAnchor, collective, category, isSelected, links }) => {
+export const NavBarCategory = ({ category }) => {
   const intl = useIntl();
+  return (
+    <Flex>
+      <Flex alignItems="center" mr={2}>
+        <IconIllustration src={CATEGORY_ICON[category] || CATEGORY_ICON.CONTRIBUTE} />
+      </Flex>
+      <Flex alignItems="center">
+        <Span textTransform="uppercase" fontSize="14px" fontWeight="500" color="black.800" letterSpacing="0.02em">
+          {i18nNavbarCategory(intl, category)}
+        </Span>
+      </Flex>
+    </Flex>
+  );
+};
+
+NavBarCategory.propTypes = {
+  category: PropTypes.oneOf(Object.values(NAVBAR_CATEGORIES)).isRequired,
+};
+
+const NavBarCategoryDropdown = ({ useAnchor, collective, category, isSelected, links }) => {
   const displayedLinks = links.filter(link => !link.hide);
   return (
     <CategoryDropdown trigger="hover" tabIndex="-1">
@@ -167,15 +192,7 @@ const NavBarCategoryDropdown = ({ useAnchor, collective, category, isSelected, l
         }}
       >
         <Flex pt="15px" pb="14px" px={[3, 1, 3, 1]}>
-          <Flex alignItems="center" mr={2}>
-            <IconIllustration src={CATEGORY_ICON[category] || CATEGORY_ICON.CONTRIBUTE} />
-          </Flex>
-          <Flex alignItems="center">
-            {i18nNavbarCategory(intl, category, {
-              hasProjects: collective.type === 'FUND',
-              hasEvents: collective.type !== 'FUND',
-            })}
-          </Flex>
+          <NavBarCategory category={category} />{' '}
         </Flex>
       </CategoryContainer>
       {displayedLinks.length > 0 && (
@@ -183,9 +200,9 @@ const NavBarCategoryDropdown = ({ useAnchor, collective, category, isSelected, l
           <DropdownArrow />
           <DropdownContent>
             <Box as="ul" p={0} m={0} minWidth={184}>
-              {displayedLinks.map(({ route, title, params }) => (
+              {displayedLinks.map(({ route, title }) => (
                 <MenuItem key={route}>
-                  <StyledLink as={Link} route={route} params={params}>
+                  <StyledLink as={Link} href={route}>
                     {title}
                   </StyledLink>
                 </MenuItem>

@@ -9,9 +9,11 @@ import styled from 'styled-components';
 import { API_V2_CONTEXT, gqlV2 } from '../../../lib/graphql/helpers';
 import { editCollectivePageQuery } from '../../../lib/graphql/queries';
 
-import Button from '../../Button';
+import StyledButton from '../../StyledButton';
 import StyledTooltip from '../../StyledTooltip';
-import { H3 } from '../../Text';
+import SettingsTitle from '../SettingsTitle';
+
+import SettingsSectionTitle from './SettingsSectionTitle';
 
 const LimitsInfoCircle = styled(InfoCircle)`
   vertical-align: baseline;
@@ -66,13 +68,13 @@ const GenericPlanFeatures = ({ plan }) => {
     <ul>
       <li>
         {collectiveLimits[plan] === 1 && (
-          <FormattedMessage id="Host.Plan.Collectives.single" defaultMessage="1 hosted collective" />
+          <FormattedMessage id="Host.Plan.Collectives.single" defaultMessage="1 hosted Collective" />
         )}
         {collectiveLimits[plan] > 1 && (
           <FormattedMessage
             id="Host.Plan.Collectives.limited"
             values={{ n: collectiveLimits[plan] }}
-            defaultMessage="Up to {n} hosted collectives"
+            defaultMessage="Up to {n} hosted Collectives"
           />
         )}
       </li>
@@ -83,10 +85,7 @@ const GenericPlanFeatures = ({ plan }) => {
         <FormattedMessage id="Host.Plan.BankTransfers.unlimited" defaultMessage="Unlimited bank transfers" />
       </li>
       <li>
-        <FormattedMessage
-          id="Host.Plan.TransferwisePayouts.unlimited"
-          defaultMessage="Unlimited payouts with TranferWise"
-        />
+        <FormattedMessage id="Host.Plan.TransferwisePayouts.unlimited" defaultMessage="Unlimited payouts" />
       </li>
     </ul>
   );
@@ -111,13 +110,13 @@ const NewPlanFeatures = ({ collective, plan, label, loading, editHostPlan, hostF
               .&nbsp;
               <FormattedMessage
                 id="Host.Plan.RevenueCharge.yes"
-                defaultMessage="15% charge on revenue made through it"
+                defaultMessage="Platform fees will be 15% of Host fees"
               />{' '}
               <StyledTooltip
                 content={() => (
                   <FormattedMessage
                     id="newPricing.tab.hostFeeChargeExample"
-                    defaultMessage="If your host fee is 10% and your Collectives bring in $1,000, your revenue is $100 and from it you’ll pay $15 to the platform."
+                    defaultMessage="If your Host fee is 10% and your Collectives bring in $1,000, your Platform fee will be $15. If you host fee is 0%, your Platform fee will be 0."
                   />
                 )}
               >
@@ -137,22 +136,19 @@ const NewPlanFeatures = ({ collective, plan, label, loading, editHostPlan, hostF
             <FormattedMessage id="Host.Plan.BankTransfers.unlimited" defaultMessage="Unlimited bank transfers" />
           </li>
           <li>
-            <FormattedMessage
-              id="Host.Plan.TransferwisePayouts.unlimited"
-              defaultMessage="Unlimited payouts with TranferWise"
-            />
+            <FormattedMessage id="Host.Plan.TransferwisePayouts.unlimited" defaultMessage="Unlimited payouts" />
           </li>
           <li>
-            <FormattedMessage id="Host.Plan.MinimalRevenue.no" defaultMessage="No minimal revenue." />
+            <FormattedMessage id="Host.Plan.MinimalRevenue.no" defaultMessage="No minimum revenue." />
           </li>
         </ul>
       </PlanFeatures>
-      <Button
+      <StyledButton
         disabled={loading || collective.plan.name === plan}
         onClick={() => editHostPlan({ variables: { account: { slug: collective.slug }, plan: plan } })}
       >
         {loading ? '...' : collective.plan.name === plan ? 'Activated' : 'Activate'}
-      </Button>
+      </StyledButton>
       {collective.plan.name === plan && <DisabledMessage>Current plan.</DisabledMessage>}
     </Plan>
   );
@@ -172,8 +168,14 @@ const editHostPlanMutation = gqlV2/* GraphQL */ `
     editHostPlan(account: $account, plan: $plan) {
       id
       slug
+      hostFeePercent
+      platformFeePercent
       plan {
+        id
         name
+      }
+      hostMetrics {
+        hostFeeSharePercent
       }
     }
   }
@@ -195,56 +197,49 @@ const HostPlan = props => {
 
   return (
     <div>
-      <H3>
+      <SettingsTitle>
         <FormattedMessage id="Host.Plan" defaultMessage="Host Plan" />
-      </H3>
+      </SettingsTitle>
 
       <PlanGrid>
-        {true && (
-          <Plan active={collective.plan.name === 'default'}>
-            <PlanName>Default Plan (old)</PlanName>
-            <PlanFeatures>
-              <ul>
-                <li>
-                  <FormattedMessage
-                    id="Host.Plan.PlatformTips.sometimes"
-                    defaultMessage="5% Platform Fees or Platform Tips"
-                  />
-                </li>
-                <li>
-                  <FormattedMessage id="Host.Plan.HostFees.yes" defaultMessage="Configurable Host Fee" />
-                  .&nbsp;
-                  <FormattedMessage
-                    id="Host.Plan.RevenueCharge.no"
-                    defaultMessage="No charge on revenue made through it."
-                  />
-                </li>
-                <li>
-                  <FormattedMessage id="Host.Plan.AddedFunds.limited" defaultMessage="Up to $1000 added funds" />
-                </li>
-                <li>
-                  <FormattedMessage id="Host.Plan.BankTransfers.limited" defaultMessage="Up to $1000 bank transfers" />
-                </li>
-                <li>
-                  <FormattedMessage
-                    id="Host.Plan.TransferwisePayouts.limited"
-                    defaultMessage="Up to $1000 payouts with TransferWise"
-                  />
-                </li>
-                <li>
-                  <FormattedMessage id="Host.Plan.MinimalRevenue.no" defaultMessage="No minimal revenue." />
-                </li>
-              </ul>
-            </PlanFeatures>
-            <Button
-              disabled={true}
-              onClick={() => editHostPlan({ variables: { account: { slug: collective.slug }, plan: 'default' } })}
-            >
-              Deprecated
-            </Button>
-            {collective.plan.name === 'default' && <DisabledMessage>Current plan.</DisabledMessage>}
-          </Plan>
-        )}
+        <Plan active={collective.plan.name === 'default'}>
+          <PlanName>Default Plan (old)</PlanName>
+          <PlanFeatures>
+            <ul>
+              <li>
+                <FormattedMessage
+                  id="Host.Plan.PlatformTips.sometimes"
+                  defaultMessage="5% Platform Fees or Platform Tips"
+                />
+              </li>
+              <li>
+                <FormattedMessage id="Host.Plan.HostFees.yes" defaultMessage="Configurable Host Fee" />
+                .&nbsp;
+                <FormattedMessage
+                  id="Host.Plan.RevenueCharge.no"
+                  defaultMessage="No Platform fee charges on Host fee."
+                />
+              </li>
+              <li>
+                <FormattedMessage id="Host.Plan.AddedFunds.limited" defaultMessage="Up to $1000 added funds" />
+              </li>
+              <li>
+                <FormattedMessage id="Host.Plan.BankTransfers.limited" defaultMessage="Up to $1000 bank transfers" />
+              </li>
+              <li>
+                <FormattedMessage
+                  id="Host.Plan.TransferwisePayouts.limited"
+                  defaultMessage="Up to $1000 payouts with Wise"
+                />
+              </li>
+              <li>
+                <FormattedMessage id="Host.Plan.MinimalRevenue.no" defaultMessage="No minimum revenue." />
+              </li>
+            </ul>
+          </PlanFeatures>
+          <StyledButton disabled={true}>Deprecated</StyledButton>
+          {collective.plan.name === 'default' && <DisabledMessage>Current plan.</DisabledMessage>}
+        </Plan>
 
         <NewPlanFeatures
           collective={collective}
@@ -288,27 +283,24 @@ const HostPlan = props => {
                 <FormattedMessage id="Host.Plan.BankTransfers.unlimited" defaultMessage="Unlimited bank transfers" />
               </li>
               <li>
-                <FormattedMessage
-                  id="Host.Plan.TransferwisePayouts.unlimited"
-                  defaultMessage="Unlimited payouts with TranferWise"
-                />
+                <FormattedMessage id="Host.Plan.TransferwisePayouts.unlimited" defaultMessage="Unlimited payouts" />
               </li>
               <li>
                 <FormattedMessage
                   id="newPricingTable.row.minimumRaised"
-                  defaultMessage="+ {minimumRaised} total raised"
+                  defaultMessage="> {minimumRaised} total processed"
                   values={{ minimumRaised: '$150,000' }}
                 />
               </li>
             </ul>
           </PlanFeatures>
-          <Button href="/support">Contact Us</Button>
+          <StyledButton href="/support">Contact Us</StyledButton>
         </Plan>
       </PlanGrid>
 
-      <h3>
+      <SettingsSectionTitle mt={3}>
         <FormattedMessage id="collective.hostSettings.currentPlan.title" defaultMessage="Limits and Usage" />
-      </h3>
+      </SettingsSectionTitle>
 
       <ul>
         <li>
@@ -331,7 +323,7 @@ const HostPlan = props => {
             content={() => (
               <FormattedMessage
                 id="collective.hostSettings.help.fundsLimit"
-                defaultMessage="The maximum amount of fund added, during any timeframe, across all collectives."
+                defaultMessage="Max funds added, all time, all Collectives."
               />
             )}
           >
@@ -353,7 +345,7 @@ const HostPlan = props => {
             content={() => (
               <FormattedMessage
                 id="collective.hostSettings.help.manualPayments"
-                defaultMessage="Your contributors create a pending donation and receive email instructions with your bank details. You can reconcile the donation when you receive it."
+                defaultMessage="Financial contributors can select 'bank transfer' at checkout and will receive email instructions with your bank details. You confirm once funds are received."
               />
             )}
           >
@@ -370,12 +362,12 @@ const HostPlan = props => {
           )}
         </li>
         <li>
-          <strong>Payouts with TransferWise Limit</strong>{' '}
+          <strong>Payouts with Wise Limit</strong>{' '}
           <StyledTooltip
             content={() => (
               <FormattedMessage
                 id="collective.hostSettings.help."
-                defaultMessage="You can pay expenses with one-click using TransferWise."
+                defaultMessage="You can pay expenses with one-click using Wise."
               />
             )}
           >

@@ -1,7 +1,7 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import { withRouter } from 'next/router';
 import { FormattedMessage } from 'react-intl';
-
-import { Router } from '../../../server/pages';
 
 import Container from '../../Container';
 import { Box, Flex } from '../../Grid';
@@ -168,7 +168,7 @@ const rows = [
         return (
           <FormattedMessage
             id="pricingTable.row.transferwisePayouts"
-            defaultMessage="Enable one-click payout with TransferWise"
+            defaultMessage="Enable one-click payout with Wise"
           />
         );
       },
@@ -221,10 +221,10 @@ const footings = [
   },
 ];
 
-const HostOrganization = () => (
+const HostOrganization = ({ router }) => (
   <Container mx={3} my={4}>
     <Box display={['block', null, 'none']}>
-      <BackButton onClick={() => Router.pushRoute('pricing')} />
+      <BackButton onClick={() => router.push('/pricing')} />
     </Box>
 
     <Container display="flex" flexDirection="column" alignItems="center">
@@ -310,7 +310,7 @@ const HostOrganization = () => (
             <Box as="li" my={3}>
               <FormattedMessage
                 id="pricing.starterPlans.transferwisePayouts"
-                defaultMessage="Pay expenses in local currency with one-click using the <strong>TransferWise</strong> integration."
+                defaultMessage="Pay expenses in local currency with one-click using the <strong>Wise</strong> integration."
                 values={I18nFormatters}
               />
             </Box>
@@ -375,4 +375,8 @@ const HostOrganization = () => (
   </Container>
 );
 
-export default HostOrganization;
+HostOrganization.propTypes = {
+  router: PropTypes.object,
+};
+
+export default withRouter(HostOrganization);

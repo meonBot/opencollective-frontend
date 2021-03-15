@@ -1,11 +1,34 @@
+import { defaultTestUserEmail } from '../support/data';
 import { randomEmail } from '../support/faker';
 
 describe('Contribution Flow: Guest contributions', () => {
+  it('Makes a contribution as an existing user', () => {
+    cy.visit('/apex/donate');
+    cy.contains('[data-cy="amount-picker"] button', 'Other').click();
+    cy.get('input[name="custom-amount"]').type('{selectall}4257.42');
+    cy.contains('#interval button', 'Monthly').click();
+    cy.get('button[data-cy="cf-next-step"]').click();
+    cy.contains('Contribute as a guest');
+    cy.get('input[name=email]').type(defaultTestUserEmail);
+    cy.get('input[name=name]').type('Jack London');
+    cy.get('button[data-cy="cf-next-step"]').click();
+    cy.useAnyPaymentMethod();
+    cy.contains('button[data-cy="cf-next-step"]', 'Contribute $4,257.42').click();
+
+    cy.contains('[data-cy="order-success"]', 'You are now supporting APEX.');
+    cy.contains('[data-cy="order-success"]', '$4,257.42 USD');
+
+    // Open email
+    const expectedEmailSubject = 'Thank you for your $4,257/month contribution to APEX';
+    cy.openEmail(({ subject }) => subject.includes(expectedEmailSubject));
+    cy.contains('If you need help with this contribution, please do not hesitate to contact');
+  });
+
   it('Joins after a single contribution', () => {
     cy.visit('/apex/donate');
     cy.contains('[data-cy="amount-picker"] button', '$10').click();
     cy.get('button[data-cy="cf-next-step"]').click();
-    cy.contains('Contribute as guest');
+    cy.contains('Contribute as a guest');
 
     // Test validations
     cy.get('button[data-cy="cf-next-step"]').click();
@@ -66,8 +89,9 @@ describe('Contribution Flow: Guest contributions', () => {
       cy.visit('/apex/donate');
       cy.contains('[data-cy="amount-picker"] button', '$10').click();
       cy.get('button[data-cy="cf-next-step"]').click();
-      cy.contains('Contribute as guest');
+      cy.contains('Contribute as a guest');
 
+      cy.get('input[name=name]').type('Rick Astley');
       cy.get('input[name=email]').type(`{selectall}${firstEmail}`);
       cy.get('button[data-cy="cf-next-step"]').click();
       cy.useAnyPaymentMethod();
@@ -86,7 +110,7 @@ describe('Contribution Flow: Guest contributions', () => {
       cy.get('[data-cy="amount-picker-btn-other"]').click();
       cy.get('input[type=number][name=custom-amount]').type('{selectall}500');
       cy.get('button[data-cy="cf-next-step"]').click();
-      cy.contains('Contribute as guest');
+      cy.contains('Contribute as a guest');
 
       // Test validations (name is now required)
       cy.get('button[data-cy="cf-next-step"]').click();
@@ -94,7 +118,7 @@ describe('Contribution Flow: Guest contributions', () => {
       cy.get('input[name=email]:invalid').should('have.length', 1); // Empty
 
       cy.get('input[name=name]').type('Rick Astley');
-      cy.get('input[name=email]').type(`{selectall}${secondEmail}`);
+      cy.get('input[name=email]').type(`{selectall}${firstEmail}`);
       cy.get('button[data-cy="cf-next-step"]').click();
       cy.useAnyPaymentMethod();
       cy.contains('button[data-cy="cf-next-step"]', 'Contribute $500').click();
@@ -112,7 +136,7 @@ describe('Contribution Flow: Guest contributions', () => {
       cy.get('[data-cy="amount-picker-btn-other"]').click();
       cy.get('input[type=number][name=custom-amount]').type('{selectall}5000');
       cy.get('button[data-cy="cf-next-step"]').click();
-      cy.contains('Contribute as guest');
+      cy.contains('Contribute as a guest');
 
       // Test validations (location is now required)
       cy.get('button[data-cy="cf-next-step"]').click();
@@ -163,19 +187,15 @@ describe('Contribution Flow: Guest contributions', () => {
 
       // Redirected from email
       cy.location('pathname').should('include', '/confirm/guest');
-      cy.contains("It seems that you've made other contributions using this browser.");
-      cy.contains('[data-cy="guest-email-checkbox"]', secondEmail).click();
-      cy.getByDataCy('confirm-account-btn').click();
       cy.contains('Your email has been confirmed');
 
       // Redirected to profile, contains all transactions
       cy.location('pathname').should('include', '/rick-astley'); // Used name to generate the profile
       cy.contains('Rick Astley');
-      cy.contains('[data-cy="hero-total-amount-contributed"]', '$5,510.00 USD');
-      cy.get('[data-cy="transaction-item"]').should('have.length', 3);
+      cy.contains('[data-cy="hero-total-amount-contributed"]', '$510.00 USD');
+      cy.get('[data-cy="transaction-item"]').should('have.length', 2);
       cy.contains('[data-cy="transaction-item"]', '$10.00');
       cy.contains('[data-cy="transaction-item"]', '$500.00');
-      cy.contains('[data-cy="transaction-item"]', '$5,000.00');
     });
   });
 });

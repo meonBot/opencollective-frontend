@@ -25,8 +25,9 @@ import {
 } from '../../recurring-contributions/UpdatePaymentMethodPopUp';
 import { withStripeLoader } from '../../StripeProvider';
 import StyledButton from '../../StyledButton';
-import { H3, Span } from '../../Text';
+import { P, Span } from '../../Text';
 import EditPaymentMethod from '../EditPaymentMethod';
+import SettingsTitle from '../SettingsTitle';
 
 class EditPaymentMethods extends React.Component {
   static propTypes = {
@@ -54,7 +55,7 @@ class EditPaymentMethods extends React.Component {
     this.messages = defineMessages({
       removeConfirm: {
         id: 'paymentMethods.removeConfirm',
-        defaultMessage: 'Do you really want to remove this payment method from your account?',
+        defaultMessage: 'Do you really want to remove this payment method?',
       },
     });
   }
@@ -181,7 +182,7 @@ class EditPaymentMethods extends React.Component {
 
   getPaymentMethodsToDisplay() {
     const paymentMethods = get(this.props, 'data.Collective.paymentMethods', []).filter(
-      pm => pm.balance > 0 || (pm.type === 'virtualcard' && pm.monthlyLimitPerMember),
+      pm => pm.balance > 0 || (pm.type === 'giftcard' && pm.monthlyLimitPerMember),
     );
     return sortBy(paymentMethods, ['type', 'id']);
   }
@@ -196,7 +197,7 @@ class EditPaymentMethods extends React.Component {
             id="errors.PM.Remove.HasActiveSubscriptions"
             defaultMessage="This payment method cannot be removed because it has active recurring financial contributions."
           />{' '}
-          <Link route="recurring-contributions" params={{ slug: this.props.collectiveSlug }}>
+          <Link href={`/${this.props.collectiveSlug}/recurring-contributions`}>
             <Span textTransform="capitalize">
               <FormattedMessage
                 id="paymentMethod.editSubscriptions"
@@ -219,6 +220,9 @@ class EditPaymentMethods extends React.Component {
       <Loading />
     ) : (
       <Flex className="EditPaymentMethods" flexDirection="column">
+        <SettingsTitle>
+          <FormattedMessage id="editCollective.menu.paymentMethods" defaultMessage="Payment Methods" />
+        </SettingsTitle>
         {error && (
           <MessageBox type="error" withIcon mb={4}>
             {this.renderError(error)}
@@ -226,9 +230,6 @@ class EditPaymentMethods extends React.Component {
         )}
         {
           <Flex className="paymentMethods" flexDirection="column" my={2}>
-            <H3>
-              <FormattedMessage id="paymentMethods.send.title" defaultMessage="Sending money" />
-            </H3>
             {paymentMethods.map(pm => (
               <Container
                 className="paymentMethod"
@@ -267,7 +268,7 @@ class EditPaymentMethods extends React.Component {
             <Span fontSize="12px" mt={2} color="black.600">
               <FormattedMessage
                 id="paymentMethods.creditcard.add.info"
-                defaultMessage="To make donations as {contributeAs}"
+                defaultMessage="For making contributions as {contributeAs}"
                 values={{ contributeAs: Collective.name }}
               />
             </Span>
@@ -284,9 +285,9 @@ class EditPaymentMethods extends React.Component {
             borderRadius={4}
             border="1px solid #dedede"
           >
-            <H3 mr={4}>
+            <P fontSize="14px" fontWeight="bold" mr={4}>
               <FormattedMessage id="paymentMethod.add" defaultMessage="New Credit Card" />
-            </H3>
+            </P>
             <Box mr={2} css={{ flexGrow: 1 }}>
               <NewCreditCardForm
                 hasSaveCheckBox={false}
@@ -333,17 +334,17 @@ const paymentMethodsQuery = gql`
       isHost
       settings
       plan {
+        id
         addedFunds
         addedFundsLimit
         bankTransfers
         bankTransfersLimit
-        hostDashboard
         hostedCollectives
         hostedCollectivesLimit
         manualPayments
         name
       }
-      paymentMethods(types: ["creditcard", "virtualcard", "prepaid"]) {
+      paymentMethods(types: ["creditcard", "giftcard", "prepaid"]) {
         id
         uuid
         name

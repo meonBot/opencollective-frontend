@@ -4,7 +4,6 @@ import { gql } from '@apollo/client';
 import { graphql } from '@apollo/client/react/hoc';
 import { get, omit, update } from 'lodash';
 import memoizeOne from 'memoize-one';
-import { Form } from 'react-bootstrap';
 import { defineMessages, FormattedMessage, injectIntl } from 'react-intl';
 import styled from 'styled-components';
 
@@ -25,8 +24,9 @@ import MessageBox from '../../MessageBox';
 import StyledButton from '../../StyledButton';
 import StyledTag from '../../StyledTag';
 import StyledTooltip from '../../StyledTooltip';
-import { H3, P } from '../../Text';
+import { withUser } from '../../UserProvider';
 import WarnIfUnsavedChanges from '../../WarnIfUnsavedChanges';
+import SettingsTitle from '../SettingsTitle';
 
 /**
  * This pages sets some global styles that are causing troubles in new components. This
@@ -46,6 +46,7 @@ class Members extends React.Component {
   static propTypes = {
     collective: PropTypes.object.isRequired,
     LoggedInUser: PropTypes.object.isRequired,
+    refetchLoggedInUser: PropTypes.func.isRequired,
     /** @ignore from injectIntl */
     intl: PropTypes.object.isRequired,
     /** @ignore from Apollo */
@@ -76,11 +77,11 @@ class Members extends React.Component {
       sinceLabel: { id: 'user.since.label', defaultMessage: 'since' },
       memberPendingDetails: {
         id: 'members.pending.details',
-        defaultMessage: 'This member has not approved the invitation to join the collective yet',
+        defaultMessage: 'This person has not accepted their invitation yet',
       },
       cantRemoveLast: {
         id: 'members.remove.cantRemoveLast',
-        defaultMessage: 'The last admin cannot be removed. Please add another admin before doing so.',
+        defaultMessage: 'The last admin cannot be removed. Please add another admin first.',
       },
       removeConfirm: {
         id: 'members.remove.confirm',
@@ -201,6 +202,7 @@ class Members extends React.Component {
         },
       });
       await this.props.data.refetch();
+      await this.props.refetchLoggedInUser();
       this.setState({ isSubmitting: false, isSubmitted: true, isTouched: false });
     } catch (e) {
       this.setState({ isSubmitting: false, error: getErrorFromGraphqlException(e) });
@@ -225,7 +227,7 @@ class Members extends React.Component {
       <Container key={`member-${index}-${memberKey}`} mt={4} pb={4} borderBottom={BORDER} data-cy={`member-${index}`}>
         <ResetGlobalStyles>
           <Flex mt={2} flexWrap="wrap">
-            <div className="col-sm-2" />
+            <Box width={[1, 2 / 12]} />
             <Flex flex="1" justifyContent="space-between" alignItems="center" flexWrap="wrap" mb={2}>
               <Box ml={1} my={1}>
                 <CollectivePickerAsync
@@ -264,7 +266,7 @@ class Members extends React.Component {
             </Flex>
           </Flex>
         </ResetGlobalStyles>
-        <Form horizontal>
+        <form>
           {this.fields.map(field => (
             <React.Fragment key={field.name}>
               <InputField
@@ -280,7 +282,7 @@ class Members extends React.Component {
                 onChange={value => this.editMember(index, field.name, value)}
               />
               {field.name === 'role' && hasRoleDescription(member.role) && (
-                <Flex mb={3} mt={-2}>
+                <Flex mb={3}>
                   <Box flex="0 1" flexBasis={['0%', '17.5%']} />
                   <Container flex="1 1" fontSize="12px" color="black.600" fontStyle="italic">
                     <MemberRoleDescription role={member.role} />
@@ -289,7 +291,7 @@ class Members extends React.Component {
               )}
             </React.Fragment>
           ))}
-        </Form>
+        </form>
       </Container>
     );
   };
@@ -304,18 +306,18 @@ class Members extends React.Component {
       <WarnIfUnsavedChanges hasUnsavedChanges={isTouched}>
         <div className="EditMembers">
           <div className="members">
-            <H3>
+            <SettingsTitle
+              subtitle={
+                collective.type === 'COLLECTIVE' && (
+                  <FormattedMessage
+                    id="members.edit.description"
+                    defaultMessage="Note: Only Collective Admins can edit this Collective and approve expenses."
+                  />
+                )
+              }
+            >
               <FormattedMessage id="EditMembers.Title" defaultMessage="Edit Team" />
-            </H3>
-            {collective.type === 'COLLECTIVE' && (
-              <P>
-                <FormattedMessage
-                  id="members.edit.description"
-                  defaultMessage="Note: Only Collective Admins can edit this Collective and approve or reject expenses."
-                />
-              </P>
-            )}
-            <hr />
+            </SettingsTitle>
             {members.map((m, idx) => this.renderMember(m, idx, nbAdmins))}
           </div>
           <Container textAlign="center" py={4} mb={4} borderBottom={BORDER}>
@@ -329,7 +331,7 @@ class Members extends React.Component {
             </MessageBox>
           )}
           <Flex justifyContent="center" flexWrap="wrap" mt={5}>
-            <Link route="collective" params={{ slug: collective.slug }}>
+            <Link href={`/${collective.slug}`}>
               <StyledButton mx={2} minWidth={200}>
                 <FormattedMessage id="ViewCollectivePage" defaultMessage="View Profile page" />
               </StyledButton>
@@ -372,13 +374,9 @@ class Members extends React.Component {
         <MessageBox type="info" withIcon>
           <FormattedMessage
             id="Members.DefinedInParent"
-            defaultMessage="The team for this profile is defined in {parentName}'s settings"
+            defaultMessage="Team members are defined in the settings of {parentName}"
             values={{
-              parentName: (
-                <Link route="editCollective" params={{ slug: parent.slug, section: 'members' }}>
-                  {parent.name}
-                </Link>
-              ),
+              parentName: <Link href={`/${parent.slug}/edit/members`}>{parent.name}</Link>,
             }}
           />
         </MessageBox>
@@ -469,4 +467,4 @@ const addEditCoreContributorsMutation = graphql(editCoreContributorsMutation, {
 
 const addGraphql = compose(addCoreContributorsData, addEditCoreContributorsMutation);
 
-export default injectIntl(addGraphql(Members));
+export default injectIntl(addGraphql(withUser(Members)));

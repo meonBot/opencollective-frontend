@@ -2,9 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { gql } from '@apollo/client';
 import { graphql } from '@apollo/client/react/hoc';
-import { get } from 'lodash';
 import memoizeOne from 'memoize-one';
-import { withRouter } from 'next/router';
 import { defineMessages, FormattedMessage, injectIntl } from 'react-intl';
 import styled from 'styled-components';
 
@@ -20,12 +18,9 @@ import StyledFilters from '../../StyledFilters';
 import { fadeIn } from '../../StyledKeyframes';
 import StyledMembershipCard from '../../StyledMembershipCard';
 import { H3 } from '../../Text';
-import { Dimensions, Sections } from '../_constants';
+import { Dimensions } from '../_constants';
 import ContainerSectionContent from '../ContainerSectionContent';
-import SectionHeader from '../SectionHeader';
 import SectionTitle from '../SectionTitle';
-
-import contributeSectionHeaderIcon from '../../../public/static/images/collective-navigation/CollectiveSectionHeaderIconContribute.png';
 
 const FILTERS = {
   ALL: 'ALL',
@@ -35,6 +30,7 @@ const FILTERS = {
   FINANCIAL: 'FINANCIAL',
   EVENTS: 'EVENTS',
 };
+
 const FILTERS_LIST = Object.values(FILTERS);
 const I18nFilters = defineMessages({
   [FILTERS.ALL]: {
@@ -137,9 +133,6 @@ class SectionContributions extends React.PureComponent {
 
     /** @ignore from withIntl */
     intl: PropTypes.object,
-
-    /** @ignore from withRouter */
-    router: PropTypes.object,
   };
 
   state = {
@@ -216,9 +209,8 @@ class SectionContributions extends React.PureComponent {
   };
 
   render() {
-    const { collective, data, intl, router } = this.props;
+    const { collective, data, intl } = this.props;
     const { nbMemberships, selectedFilter } = this.state;
-    const newNavbarFeatureFlag = get(router, 'query.navbarVersion') === 'v2';
 
     if (data.loading) {
       return <LoadingPlaceholder height={600} borderRadius={0} />;
@@ -245,24 +237,12 @@ class SectionContributions extends React.PureComponent {
     const sortedMemberships = this.sortMemberships(memberships);
     const isOrganization = collective.type === CollectiveType.ORGANIZATION;
     return (
-      <Box pt={5} pb={3}>
+      <Box pb={4}>
         {memberOf.length > 0 && (
           <React.Fragment>
             <ContainerSectionContent>
-              {!newNavbarFeatureFlag && (
-                <SectionHeader
-                  title={Sections.CONTRIBUTIONS}
-                  subtitle={
-                    <FormattedMessage
-                      id="CollectivePage.SectionContributions.Subtitle"
-                      defaultMessage="How we are supporting other Collectives."
-                    />
-                  }
-                  illustrationSrc={contributeSectionHeaderIcon}
-                />
-              )}
               {data.Collective.stats.collectives.hosted > 0 && (
-                <H3 fontSize="20px" fontWeight="500" color="black.600">
+                <H3 fontSize={['20px', '24px', '32px']} fontWeight="normal" color="black.700">
                   <FormattedMessage
                     id="organization.collective.memberOf.collective.host.title"
                     values={{ n: data.Collective.stats.collectives.hosted }}
@@ -317,7 +297,7 @@ class SectionContributions extends React.PureComponent {
         {connectedCollectives.length > 0 && (
           <Box mt={5}>
             <ContainerSectionContent>
-              <SectionTitle textAlign="left" mb={4}>
+              <SectionTitle textAlign="left" mb={4} fontSize={['20px', '24px', '32px']} color="black.700">
                 {isOrganization ? (
                   <FormattedMessage
                     id="CP.Contributions.PartOfOrg"
@@ -327,7 +307,7 @@ class SectionContributions extends React.PureComponent {
                 ) : (
                   <FormattedMessage
                     id="CP.Contributions.ConnectedCollective"
-                    defaultMessage="{n, plural, one {This Collective is} other {These Collectives are}} part of what we do"
+                    defaultMessage="{n, plural, one {This Collective is} other {These Collectives are}} connected to us"
                     values={{ n: connectedCollectives.length }}
                   />
                 )}
@@ -443,4 +423,4 @@ const addContributionsSectionData = graphql(contributionsSectionQuery, {
   }),
 });
 
-export default React.memo(withRouter(injectIntl(addContributionsSectionData(SectionContributions))));
+export default React.memo(injectIntl(addContributionsSectionData(SectionContributions)));

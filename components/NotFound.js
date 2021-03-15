@@ -20,9 +20,9 @@ const NotFound = ({ searchTerm }) => {
       {searchTerm && (
         <Flex flexWrap="wrap" justifyContent="center">
           <StyledButton m={2} onClick={() => Router.back()}>
-            &larr; <FormattedMessage id="error.goBack" defaultMessage="Go back to previous page" />
+            &larr; <FormattedMessage id="error.goBack" defaultMessage="Go back to the previous page" />
           </StyledButton>
-          <Link route="search" params={{ q: searchTerm }}>
+          <Link href={{ pathname: '/search', query: { q: searchTerm } }}>
             <StyledButton m={2} buttonStyle="primary">
               <FormattedMessage
                 id="notFound.search"

@@ -6,7 +6,7 @@ import styled from 'styled-components';
 
 import expenseStatus from '../../lib/constants/expense-status';
 import expenseTypes from '../../lib/constants/expenseTypes';
-import { PayoutMethodType } from '../../lib/constants/payout-method';
+import { INVITE, PayoutMethodType } from '../../lib/constants/payout-method';
 
 import Avatar from '../Avatar';
 import Container from '../Container';
@@ -55,7 +55,7 @@ const PrivateInfoColumnHeader = styled(H4).attrs({
 })``;
 
 const ExpensePayeeDetails = ({ expense, host, isLoading, borderless, isLoadingLoggedInUser, isDraft, collective }) => {
-  const { payeeLocation } = expense || {};
+  const payeeLocation = expense?.payeeLocation || expense?.draft?.payeeLocation;
   const payee = isDraft ? expense?.draft?.payee : expense?.payee;
   const isInvoice = expense?.type === expenseTypes.INVOICE;
 
@@ -110,7 +110,7 @@ const ExpensePayeeDetails = ({ expense, host, isLoading, borderless, isLoadingLo
             <PayoutMethodTypeWithIcon
               type={
                 !expense.payoutMethod?.type && (expense.draft || expense.payee.isInvite)
-                  ? PayoutMethodType.INVITE
+                  ? expense.draft?.payoutMethod || INVITE
                   : expense.payoutMethod?.type
               }
             />
@@ -206,6 +206,8 @@ ExpensePayeeDetails.propTypes = {
     requiredLegalDocuments: PropTypes.arrayOf(PropTypes.string),
     draft: PropTypes.shape({
       payee: PropTypes.object,
+      payeeLocation: PropTypes.object,
+      payoutMethod: PropTypes.object,
     }),
     payee: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),

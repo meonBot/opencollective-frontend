@@ -15,11 +15,13 @@ export const NAVBAR_ACTION_TYPE = {
   ADD_FUNDS: 'addFunds',
   CONTRIBUTE: 'hasContribute',
   MANAGE_SUBSCRIPTIONS: 'hasManageSubscriptions',
+  REQUEST_GRANT: 'hasRequestGrant',
+  SETTINGS: 'hasSettings',
 };
 
 const titles = defineMessages({
   CONTRIBUTE: {
-    id: 'Contribute.allWays',
+    id: 'SectionContribute.All',
     defaultMessage: 'All ways to contribute',
   },
   TRANSACTIONS: {
@@ -65,49 +67,44 @@ const getCategoryMenuLinks = (intl, collective, sections, category) => {
     addSectionLink(intl, links, collective, sections, Sections.GOALS);
   } else if (category === NAVBAR_CATEGORIES.CONTRIBUTE) {
     // Contribute
-    if (hasFeature(collective, FEATURES.RECEIVE_FINANCIAL_CONTRIBUTIONS)) {
+    if (hasFeature(collective, FEATURES.RECEIVE_FINANCIAL_CONTRIBUTIONS) && hasSection(sections, Sections.CONTRIBUTE)) {
       links.push({
-        route: 'contribute',
-        params: { collectiveSlug, verb: 'contribute' },
+        route: `/${collectiveSlug}/contribute`,
         title: intl.formatMessage(titles.CONTRIBUTE),
       });
     }
+
+    addSectionLink(intl, links, collective, sections, Sections.EVENTS);
+    addSectionLink(intl, links, collective, sections, Sections.PROJECTS);
   } else if (category === NAVBAR_CATEGORIES.CONTRIBUTIONS) {
     addSectionLink(intl, links, collective, sections, Sections.CONTRIBUTIONS);
   } else if (category === NAVBAR_CATEGORIES.BUDGET) {
     // Budget
     links.push({
-      route: 'transactions',
-      params: { collectiveSlug },
+      route: `/${collectiveSlug}/transactions`,
       title: intl.formatMessage(titles.TRANSACTIONS),
     });
 
     if (hasFeature(collective, FEATURES.RECEIVE_EXPENSES)) {
       links.push({
-        route: 'expenses',
-        params: { collectiveSlug },
+        route: `/${collectiveSlug}/expenses`,
         title: intl.formatMessage(titles.EXPENSES),
       });
     }
   } else if (category === NAVBAR_CATEGORIES.CONNECT) {
     // Connect
-    if (hasFeature(collective, FEATURES.UPDATES)) {
+    if (hasFeature(collective, FEATURES.UPDATES) && hasSection(sections, Sections.UPDATES)) {
       links.push({
-        route: 'updates',
-        params: { collectiveSlug },
+        route: `/${collectiveSlug}/updates`,
         title: intl.formatMessage(titles.UPDATES),
       });
     }
-    if (hasFeature(collective, FEATURES.CONVERSATIONS)) {
+    if (hasFeature(collective, FEATURES.CONVERSATIONS) && hasSection(sections, Sections.CONVERSATIONS)) {
       links.push({
-        route: 'conversations',
-        params: { collectiveSlug },
+        route: `/${collectiveSlug}/conversations`,
         title: intl.formatMessage(titles.CONVERSATIONS),
       });
     }
-  } else if (category === NAVBAR_CATEGORIES.EVENTS) {
-    addSectionLink(intl, links, collective, sections, Sections.EVENTS);
-    addSectionLink(intl, links, collective, sections, Sections.PROJECTS);
   }
 
   return links;

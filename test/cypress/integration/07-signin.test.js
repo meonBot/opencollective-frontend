@@ -8,7 +8,7 @@ describe('signin', () => {
     cy.visit('/signin?next=/testuseradmin');
     cy.get('input[name=email]').type('testuser+admin@opencollective.com');
     cy.get('button[type=submit]').click();
-    cy.get('.LoginTopBarProfileButton-name').contains('testuseradmin', { timeout: 15000 });
+    cy.getByDataCy('topbar-login-username').contains('Test User Admin', { timeout: 15000 });
   });
 
   it('can signin with a valid token and is redirected', () => {
@@ -117,14 +117,14 @@ describe('signin', () => {
 
   it('can signup a user with gmail and show Open Gmail button ', () => {
     // Submit the form using the email providers--gmail)
-    const gmail_email = randomGmailEmail(false);
+    const gmailEmail = randomGmailEmail(false);
     cy.visit('/signin');
     cy.contains('a', 'Join Free').click();
     cy.get('input[name=name]').type('Dummy Name');
-    cy.get('input[name=email]').type(`{selectall}${gmail_email}`);
+    cy.get('input[name=email]').type(`{selectall}${gmailEmail}`);
     cy.get('button[type=submit]').click();
     cy.contains('Your magic link is on its way!');
-    cy.contains(`We've sent it to ${gmail_email}.`);
+    cy.contains(`We've sent it to ${gmailEmail}.`);
     cy.getByDataCy('open-inbox-link').should(
       'have.prop',
       'href',

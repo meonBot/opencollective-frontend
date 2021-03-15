@@ -19,16 +19,17 @@ import Container from '../../components/Container';
 import { formatAccountDetails } from '../../components/edit-collective/utils';
 import { Box, Flex } from '../../components/Grid';
 import I18nFormatters, { getI18nLink } from '../../components/I18nFormatters';
-import Link from '../../components/Link';
 import Loading from '../../components/Loading';
 import MessageBox from '../../components/MessageBox';
 import StyledLink from '../../components/StyledLink';
 import { H3, P } from '../../components/Text';
 import { withUser } from '../../components/UserProvider';
 
+import Link from '../Link';
+
+import { orderSuccessFragment } from './graphql/fragments';
 import PublicMessageForm from './ContributionFlowPublicMessage';
 import ContributorCardWithTier from './ContributorCardWithTier';
-import { orderSuccessFragment } from './index';
 import successIllustrationUrl from './success-illustration.jpg';
 import SuccessCTA, { SUCCESS_CTA_TYPE } from './SuccessCTA';
 
@@ -87,7 +88,7 @@ const SuccessIllustration = styled.img.attrs({ src: successIllustrationUrl })`
 const successMsgs = defineMessages({
   default: {
     id: 'order.created.tweet',
-    defaultMessage: "I've just donated to {collective}. Consider donating too, every little helps!",
+    defaultMessage: "I've just contributed to {collective}. Consider supporting them too — every little helps!",
   },
   event: {
     id: 'order.created.tweet.event',
@@ -103,33 +104,42 @@ const getMainTag = collective => {
   }
 };
 
-class NewContributionFlowSuccess extends React.Component {
+class ContributionFlowSuccess extends React.Component {
   static propTypes = {
     collective: PropTypes.object,
     LoggedInUser: PropTypes.object,
     intl: PropTypes.object,
-    router: PropTypes.object,
     loadingLoggedInUser: PropTypes.bool,
+    router: PropTypes.object,
+    isEmbed: PropTypes.bool,
     data: PropTypes.object,
   };
 
   renderCallsToAction = () => {
-    const { LoggedInUser, router, data } = this.props;
-    const callsToAction = [SUCCESS_CTA_TYPE.NEWSLETTER];
+    const { LoggedInUser, data, isEmbed, router } = this.props;
+    const callsToAction = [];
+    const isGuest = get(data, 'order.fromAccount.isGuest');
+    const email = get(router, 'query.email') ? decodeURIComponent(router.query.email) : null;
 
-    if (!LoggedInUser) {
-      // all guest transactions
-      callsToAction.unshift(SUCCESS_CTA_TYPE.JOIN, SUCCESS_CTA_TYPE.BLOG);
-    } else if (LoggedInUser && !router.query.emailRedirect) {
-      // all other logged in recurring/one time contributions
-      callsToAction.unshift(SUCCESS_CTA_TYPE.BLOG);
+    if (!isEmbed) {
+      callsToAction.push(SUCCESS_CTA_TYPE.NEWSLETTER);
+      if (!LoggedInUser) {
+        if (isGuest) {
+          callsToAction.unshift(SUCCESS_CTA_TYPE.JOIN, SUCCESS_CTA_TYPE.BLOG);
+        } else {
+          callsToAction.unshift(SUCCESS_CTA_TYPE.SIGN_IN, SUCCESS_CTA_TYPE.BLOG);
+        }
+      } else {
+        // all other logged in recurring/one time contributions
+        callsToAction.unshift(SUCCESS_CTA_TYPE.BLOG);
+      }
     }
 
     return (
       <Flex flexDirection="column" justifyContent="center" p={2}>
         {callsToAction.length <= 2 && <SuccessIllustration />}
         {callsToAction.map(type => (
-          <SuccessCTA key={type} type={type} orderId={get(data, 'order.id')} />
+          <SuccessCTA key={type} type={type} orderId={get(data, 'order.id')} email={email} />
         ))}
       </Flex>
     );
@@ -157,7 +167,7 @@ class NewContributionFlowSuccess extends React.Component {
         <MessageBox type="warning" fontSize="12px" mb={2}>
           <FormattedMessage
             id="collective.user.orderProcessing.manual"
-            defaultMessage="<strong>Your donation is pending.</strong> Please follow the instructions in the confirmation email to manually pay the host of the collective."
+            defaultMessage="<strong>Your contribution is pending.</strong> Please follow the payment instructions in the confirmation email to complete your transaction."
             values={I18nFormatters}
           />
         </MessageBox>
@@ -175,13 +185,12 @@ class NewContributionFlowSuccess extends React.Component {
           <P fontSize="16px" color="black.700">
             <FormattedMessage
               id="NewContributionFlow.InTheMeantime"
-              defaultMessage="In the meantime, you can follow {collective} and see how they are spending the money <CollectiveLink>on their collective page</CollectiveLink>."
+              defaultMessage="In the meantime, you can see what {collective} is up to <CollectiveLink>on their Collective page</CollectiveLink>."
               values={{
                 collective: this.props.data.order.toAccount.name,
                 CollectiveLink: getI18nLink({
                   as: Link,
-                  route: 'collective',
-                  params: { slug: this.props.data.order.toAccount.slug },
+                  href: `/${this.props.data.order.toAccount.slug}`,
                 }),
               }}
             />
@@ -192,7 +201,7 @@ class NewContributionFlowSuccess extends React.Component {
   };
 
   render() {
-    const { LoggedInUser, collective, data, intl } = this.props;
+    const { LoggedInUser, collective, data, intl, isEmbed } = this.props;
     const { order } = data;
     const shareURL = `${process.env.WEBSITE_URL}/${collective.slug}`;
     const pendingOrder = order && order.status === ORDER_STATUS.PENDING;
@@ -209,10 +218,11 @@ class NewContributionFlowSuccess extends React.Component {
 
     return (
       <Flex
-        justifyContent="center"
         width={1}
         minHeight={[400, 800]}
         flexDirection={['column', null, 'row']}
+        justifyContent={[null, null, 'center']}
+        css={{ height: '100%' }}
         data-cy="order-success"
       >
         {data.loading ? (
@@ -226,6 +236,7 @@ class NewContributionFlowSuccess extends React.Component {
               alignItems="center"
               justifyContent="center"
               width={['100%', null, '50%', '762px']}
+              mb={[4, null, 0]}
               flexShrink={0}
             >
               <Flex flexDirection="column" alignItems="center" justifyContent="center" my={4} width={1}>
@@ -241,19 +252,21 @@ class NewContributionFlowSuccess extends React.Component {
                     />
                   </P>
                 </Box>
-                <ContributorCardWithTier width={250} height={380} contribution={order} my={2} />
-                <Box my={4}>
-                  <Link route="discover" params={{ show: getMainTag(order.toAccount) }}>
-                    <P color="black.800" fontWeight={500}>
-                      <FormattedMessage
-                        id="NewContributionFlow.Success.DiscoverMore"
-                        defaultMessage="Discover more Collectives like {collective} &rarr;"
-                        values={{ collective: order.toAccount.name }}
-                      />
-                    </P>
-                  </Link>
-                </Box>
-                <Flex justifyContent="center" mt={2}>
+                <ContributorCardWithTier width={250} height={380} contribution={order} my={2} useLink={!isEmbed} />
+                {!isEmbed && (
+                  <Box my={4}>
+                    <Link href={{ pathname: '/discover', query: { show: getMainTag(order.toAccount) } }}>
+                      <P color="black.800" fontWeight={500}>
+                        <FormattedMessage
+                          id="NewContributionFlow.Success.DiscoverMore"
+                          defaultMessage="Discover more Collectives like {collective} &rarr;"
+                          values={{ collective: order.toAccount.name }}
+                        />
+                      </P>
+                    </Link>
+                  </Box>
+                )}
+                <Flex justifyContent="center" mt={3}>
                   <ShareLink
                     href={tweetURL({
                       url: shareURL,
@@ -305,4 +318,4 @@ const addOrderSuccessQuery = graphql(orderSuccessQuery, {
   }),
 });
 
-export default injectIntl(withUser(withRouter(addOrderSuccessQuery(NewContributionFlowSuccess))));
+export default injectIntl(withUser(withRouter(addOrderSuccessQuery(ContributionFlowSuccess))));

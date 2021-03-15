@@ -3,10 +3,12 @@ import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 
+import SettingsSectionTitle from './edit-collective/sections/SettingsSectionTitle';
 import Container from './Container';
 import { Box } from './Grid';
 import InputField from './InputField';
 import StyledLink from './StyledLink';
+import { Label } from './Text';
 
 const ParameterColumnHeader = styled.th`
   font-size: 12px;
@@ -40,17 +42,16 @@ class ExportImages extends React.Component {
           {
             name: 'Tier badge',
             url: `https://opencollective.com/${collective.slug}/tiers/${tier.slug}/badge.svg?label=${encodedTierName}&color=brightgreen`,
-            code: `<img src="https://opencollective.com/${collective.slug}/tiers/${tier.slug}/badge.svg?label=${encodedTierName}&color=brightgreen" />`,
+            code: `<img alt="open collective badge" src="https://opencollective.com/${collective.slug}/tiers/${tier.slug}/badge.svg?label=${encodedTierName}&color=brightgreen" />`,
             options: [
               {
                 name: 'label',
-                description: 'label of the badge',
-                defaultValue: `name of the tier (${tier.name})`,
+                description: 'badge label',
+                defaultValue: `tier name (${tier.name})`,
               },
               {
                 name: 'color',
-                description:
-                  'color of the badge (brightgreen, green, yellowgreen, yellow, orange, red, lightgrey, blue)',
+                description: 'badge color (brightgreen, green, yellowgreen, yellow, orange, red, lightgrey, blue)',
                 defaultValue: 'brightgreen',
               },
             ],
@@ -58,33 +59,33 @@ class ExportImages extends React.Component {
           {
             name: 'Financial contributors widget',
             url: `https://opencollective.com/${collective.slug}/tiers/${tier.slug}.svg?avatarHeight=36`,
-            code: `<object type="image/svg+xml" data="https://opencollective.com/${collective.slug}/tiers/${tier.slug}.svg?avatarHeight=36&width=600"></object>`,
+            code: `<object type="image/svg+xml" data="https://opencollective.com/${collective.slug}/tiers/${tier.slug}.svg?avatarHeight=36&width=600" style="max-width: 100%;"></object>`,
             options: [
               {
                 name: 'width',
-                description: 'width of the image',
+                description: 'image width',
               },
               {
                 name: 'height',
-                description: 'height of the image',
+                description: 'image height',
               },
               {
                 name: 'limit',
-                description: 'max number of financial contributors to show',
+                description: 'max contributors to show',
                 defaultValue: '(unlimited)',
               },
               {
                 name: 'avatarHeight',
-                description: 'max height of each avatar / logo',
+                description: 'max avatar/logo height',
               },
               {
                 name: 'button',
-                description: 'show "become a backer/sponsor" button',
+                description: 'show "become a contributor" button',
                 defaultValue: 'true',
               },
               {
                 name: 'format',
-                description: 'format of the image (replace .svg with .png or .jpg)',
+                description: 'image format (replace .svg with .png or .jpg)',
               },
             ],
           },
@@ -99,9 +100,9 @@ class ExportImages extends React.Component {
 
     return (
       <div>
-        <h1>
-          <FormattedMessage id="export.images.title" defaultMessage="Export images" />
-        </h1>
+        <SettingsSectionTitle>
+          <FormattedMessage id="export.images.title" defaultMessage="Export tier images" />
+        </SettingsSectionTitle>
         <p>
           <FormattedMessage
             id="ExportImages.Title"
@@ -117,11 +118,12 @@ class ExportImages extends React.Component {
           />
         </div>
         {tier && (
-          <div>
+          <ul>
             {tier.images.map(image => (
-              <Container key={image.name} mb={4}>
-                <label>{image.name}</label>
+              <Container as="li" key={image.name} mb={4}>
+                <Label fontWeight="500">{image.name}</Label>
                 <div
+                  style={{ maxWidth: '100%', overflowY: 'auto' }}
                   dangerouslySetInnerHTML={{
                     __html: image.code,
                   }}
@@ -131,7 +133,7 @@ class ExportImages extends React.Component {
                     {image.url}
                   </StyledLink>
                 </Box>
-                <Container as="pre" fontSize="11px" maxWidth={880}>
+                <Container as="pre" whiteSpace="pre-wrap" fontSize="11px" maxWidth={880}>
                   {image.code}
                 </Container>
                 <Container fontSize="14px" mt={3}>
@@ -163,23 +165,21 @@ class ExportImages extends React.Component {
                 </Container>
               </Container>
             ))}
-          </div>
+          </ul>
         )}
-        <hr />
-        <label>
+        <SettingsSectionTitle mt={4}>
           <FormattedMessage id="ExportImages.AllFinancial" defaultMessage="All financial contributors badge" />
-        </label>
-        <div>
+        </SettingsSectionTitle>
+        <Box mb={2}>
           <StyledLink
             fontSize="14px"
             openInNewTab
             href={`https://opencollective.com/${collective.slug}/tiers/badge.svg`}
-            target="_blank"
           >
             {`https://opencollective.com/${collective.slug}/tiers/badge.svg`}
           </StyledLink>
-        </div>
-        <img src={`https://opencollective.com/${collective.slug}/tiers/badge.svg`} />
+        </Box>
+        <img alt="open collective badge" src={`https://opencollective.com/${collective.slug}/tiers/badge.svg`} />
       </div>
     );
   }

@@ -8,7 +8,6 @@ import Container from './Container';
 import Footer from './Footer';
 import Header from './Header';
 import HostsWithData from './HostsWithData';
-import Link from './Link';
 import { H1, P } from './Text';
 
 const CoverSmallCTA = styled.span`
@@ -35,11 +34,11 @@ class Hosts extends React.Component {
       'hosts.description': {
         id: 'hosts.description',
         defaultMessage:
-          "Hosts are legal entities that collect money on behalf of open collectives so that they don't have to worry about accounting, taxes, etc. Some also provide extra services. {findOutMoreLink}",
+          'Fiscal Hosts hold money on behalf of Collectives, taking care of accounting, taxes, invoices, etc. Some also provide extra services. {findOutMoreLink}',
       },
       'hosts.findOutMoreLink': {
         id: 'hosts.description.findOutMoreLink',
-        defaultMessage: 'Find out more about becoming an Open Collective Host.',
+        defaultMessage: 'Find out more about becoming a Fiscal Host.',
       },
     });
   }
@@ -53,7 +52,7 @@ class Hosts extends React.Component {
 
     const findOutMoreLink = (
       <CoverSmallCTA>
-        <Link route="https://docs.opencollective.com/help/fiscal-hosts/become-a-fiscal-host">{findOutMoreMessage}</Link>
+        <a href="https://docs.opencollective.com/help/fiscal-hosts/become-a-fiscal-host">{findOutMoreMessage}</a>
       </CoverSmallCTA>
     );
 
@@ -69,7 +68,7 @@ class Hosts extends React.Component {
             <P textAlign="center">
               <FormattedMessage
                 id="hosts.description"
-                defaultMessage="Hosts are legal entities that collect money on behalf of open collectives so that they don't have to worry about accounting, taxes, etc. Some also provide extra services. {findOutMoreLink}"
+                defaultMessage="Fiscal Hosts hold money on behalf of Collectives, taking care of accounting, taxes, invoices, etc. Some also provide extra services. {findOutMoreLink}"
                 values={{ findOutMoreLink }}
               />
             </P>

@@ -3,11 +3,12 @@ import PropTypes from 'prop-types';
 import { gql } from '@apollo/client';
 import { Mutation } from '@apollo/client/react/components';
 import { pick } from 'lodash';
-import { Col, Modal, Row } from 'react-bootstrap';
 import { FormattedMessage } from 'react-intl';
 
 import AddPrepaidBudget from './AddPrepaidBudget';
-import Button from './Button';
+import { Box, Flex } from './Grid';
+import StyledButton from './StyledButton';
+import StyledModal, { ModalBody } from './StyledModal';
 import { withUser } from './UserProvider';
 
 const addPrepaidBudgetMutation = gql`
@@ -38,19 +39,19 @@ const AddPrepaidBudgetModal = ({ LoggedInUser, show, setShow, collective, host }
   }
 
   return (
-    <Modal show={show} onHide={close}>
-      <Modal.Body>
-        <Row>
-          <Col sm={12}>
+    <StyledModal show={show} onClose={close} trapFocus>
+      <ModalBody>
+        <Flex flexDirection="column">
+          <Box>
             {prepaidBudgetAdded && (
               <div>
                 <h1>
                   <FormattedMessage id="AddPrepaidBudget.Success" defaultMessage="Prepaid budget added successfully" />
                 </h1>
                 <center>
-                  <Button className="blue" onClick={close}>
+                  <StyledButton buttonStyle="primary" onClick={close}>
                     Ok
-                  </Button>
+                  </StyledButton>
                 </center>
               </div>
             )}
@@ -96,14 +97,14 @@ const AddPrepaidBudgetModal = ({ LoggedInUser, show, setShow, collective, host }
                 )}
               </Mutation>
             )}
-          </Col>
-        </Row>
-        <Row>
-          <Col sm={2} />
-          <Col sm={10}>{error && <div style={{ color: 'red', fontWeight: 'bold' }}>{error}</div>}</Col>
-        </Row>
-      </Modal.Body>
-    </Modal>
+          </Box>
+        </Flex>
+        <Flex maxWidth="700px" flexWrap="wrap">
+          <Box width={[1, 2 / 12]} />
+          <Box width={[1, 10 / 12]}>{error && <div style={{ color: 'red', fontWeight: 'bold' }}>{error}</div>}</Box>
+        </Flex>
+      </ModalBody>
+    </StyledModal>
   );
 };
 

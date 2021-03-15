@@ -39,7 +39,7 @@ class ApplyToHostBtn extends React.Component {
         ...buttonProps,
         children: (
           <React.Fragment>
-            {!withoutIcon && <CheckCircle size="1.2em" />}
+            {!withoutIcon && <CheckCircle size="1em" />}
             {!withoutIcon && ' '}
             <span>
               <FormattedMessage id="host.apply.create.btn" defaultMessage="Apply" />
@@ -78,10 +78,10 @@ class ApplyToHostBtn extends React.Component {
             content={
               <FormattedMessage
                 id="host.hostLimit.warning"
-                defaultMessage="Host already reached the limit of hosted collectives for its plan. <a>Contact {collectiveName}</a> and let them know you want to apply."
+                defaultMessage="This Fiscal Host has reached its Collective limit. <a>Contact {collectiveName}</a> to request they upgrade, and let them know you want to apply."
                 values={{
                   collectiveName: hostSlug,
-                  a: getI18nLink({ as: Link, route: 'collective-contact', params: { collectiveSlug: hostSlug } }),
+                  a: getI18nLink({ as: Link, href: `${hostSlug}/contact` }),
                 }}
               />
             }

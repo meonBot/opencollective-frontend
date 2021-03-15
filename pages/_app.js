@@ -14,10 +14,8 @@ import withData from '../lib/withData';
 import StripeProviderSSR from '../components/StripeProvider';
 import UserProvider from '../components/UserProvider';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
 import 'nprogress/nprogress.css';
 import 'react-datetime/css/react-datetime.css';
-import 'react-quill/dist/quill.snow.css';
 import 'trix/dist/trix.css';
 import '../public/static/styles/app.css';
 import '../public/static/styles/react-tags.css';
@@ -75,6 +73,7 @@ class OpenCollectiveFrontendApp extends App {
             try {
               await loadGoogleMaps();
             } catch (e) {
+              // eslint-disable-next-line no-console
               console.error(e);
             }
           }

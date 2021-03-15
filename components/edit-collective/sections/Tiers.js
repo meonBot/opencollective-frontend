@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Mutation } from '@apollo/client/react/components';
 import { getApplicableTaxes } from '@opencollective/taxes';
 import { cloneDeep, get, set } from 'lodash';
-import { Form } from 'react-bootstrap';
 import { defineMessages, FormattedMessage, injectIntl } from 'react-intl';
 import { v4 as uuid } from 'uuid';
 
@@ -18,13 +17,16 @@ import ContributeCustom from '../../contribute-cards/ContributeCustom';
 import { Box, Flex } from '../../Grid';
 import InputField from '../../InputField';
 import InputFieldPresets from '../../InputFieldPresets';
+import Link from '../../Link';
 import MessageBox from '../../MessageBox';
 import StyledButton from '../../StyledButton';
 import StyledCheckbox from '../../StyledCheckbox';
-import StyledHr from '../../StyledHr';
-import { H3, H4, P, Span } from '../../Text';
+import StyledLink from '../../StyledLink';
+import { P, Span } from '../../Text';
+import SettingsTitle from '../SettingsTitle';
 
 import { editCollectiveSettingsMutation } from './../mutations';
+import SettingsSectionTitle from './SettingsSectionTitle';
 
 const { FUND, PROJECT, EVENT } = CollectiveType;
 const { TIER, TICKET, MEMBERSHIP, SERVICE, PRODUCT, DONATION } = TierTypes;
@@ -127,7 +129,7 @@ class Tiers extends React.Component {
       },
       'goal.description': {
         id: 'tier.goal.description',
-        defaultMessage: 'The amount that you are trying to raise with this tier',
+        defaultMessage: 'Amount you aim to raise',
       },
       'interval.label': {
         id: 'tier.interval.label',
@@ -156,7 +158,7 @@ class Tiers extends React.Component {
       'endsAt.label': { id: 'tier.expiration.label', defaultMessage: 'Expiration' },
       'endsAt.description': {
         id: 'tier.endsAt.description',
-        defaultMessage: 'Date and time until when this tier should be available',
+        defaultMessage: 'Date this tier should deactivate',
       },
       'maxQuantity.label': {
         id: 'tier.maxQuantity.label',
@@ -164,16 +166,20 @@ class Tiers extends React.Component {
       },
       'maxQuantity.description': {
         id: 'tier.maxQuantity.description',
-        defaultMessage: 'Leave it empty for unlimited',
+        defaultMessage: 'Leave empty for unlimited',
       },
       'customContributions.label': {
         id: 'tier.customContributions.label',
-        defaultMessage: 'Enable custom contributions',
+        defaultMessage: 'Enable flexible contributions',
       },
-      forceLongDescription: {
-        id: 'tier.forceLongDescription',
+      standalonePage: {
+        id: 'tier.standalonePage',
+        defaultMessage: 'Standalone page',
+      },
+      standalonePageDescription: {
+        id: 'tier.standalonePageDescription',
         defaultMessage:
-          'The standalone tier page, represented by the "Read more" link, will be enabled automatically if you write a short description longer than 100 characters or if you\'ve already set a long description. You can use this switch to force the display of the page.',
+          "Create a <link>standalone</link> page for this tier? It's like a mini-crowdfunding campaign page that you can add a detailed description and video to, and link to directly",
       },
     });
 
@@ -267,11 +273,29 @@ class Tiers extends React.Component {
         description: intl.formatMessage(this.messages['goal.description']),
       },
       {
-        name: '__hasLongDescription',
+        name: 'useStandalonePage',
         type: 'switch',
-        label: 'Force standalone page',
-        description: intl.formatMessage(this.messages.forceLongDescription),
+        label: intl.formatMessage(this.messages.standalonePage),
         when: (tier, collective) => ![FUND, PROJECT].includes(collective.type),
+        description: (tier, collective) =>
+          intl.formatMessage(this.messages.standalonePageDescription, {
+            link: function StandaloneTierPageLink(...msg) {
+              if (!tier.id) {
+                return msg;
+              } else {
+                const collectiveSlug = collective.slug;
+                return (
+                  <StyledLink
+                    as={Link}
+                    openInNewTab
+                    href={{ pathname: `/${collectiveSlug}/contribute/${tier.slug}-${tier.id}` }}
+                  >
+                    <span>{msg}</span>
+                  </StyledLink>
+                );
+              }
+            },
+          }),
       },
     ];
   }
@@ -281,12 +305,6 @@ class Tiers extends React.Component {
 
     if (fieldname === 'interval' && value === 'onetime') {
       value = null;
-    } else if (fieldname === '__hasLongDescription') {
-      if (value) {
-        // Setting a string with an empty line for the description will activate the page
-        fieldname = 'longDescription';
-        value = tiers[index].longDescription || '<br/>';
-      }
     }
 
     tiers[index] = {
@@ -352,12 +370,12 @@ class Tiers extends React.Component {
 
     return (
       <Container margin="3rem 0" className={`tier ${tier.slug}`} key={key}>
-        <Container textAlign="right" fontSize="1.3rem">
+        <Container textAlign="right" fontSize="1.3rem" pr={1}>
           <a className="removeTier" href="#" onClick={() => this.removeTier(index)}>
             {intl.formatMessage(this.messages[`${this.defaultType}.remove`])}
           </a>
         </Container>
-        <Form horizontal>
+        <form>
           {this.fields.map(
             field =>
               (!field.when || field.when(defaultValues, collective)) && (
@@ -367,13 +385,15 @@ class Tiers extends React.Component {
                     name={field.name}
                     label={this.renderLabel(field, Boolean(taxes.length))}
                     component={field.component}
-                    description={field.description}
                     type={field.type}
                     defaultValue={defaultValues[field.name]}
                     options={field.options}
                     pre={field.pre}
                     placeholder={field.placeholder}
                     onChange={value => this.editTier(index, field.name, value)}
+                    description={
+                      typeof field.description === 'function' ? field.description(tier, collective) : field.description
+                    }
                   />
                   {field.name === 'type' &&
                     taxes.map(({ type, percentage }) => (
@@ -395,7 +415,7 @@ class Tiers extends React.Component {
                 </Box>
               ),
           )}
-        </Form>
+        </form>
       </Container>
     );
   }
@@ -407,13 +427,12 @@ class Tiers extends React.Component {
 
     return (
       <div className="EditTiers">
-        <H3>{this.props.title}</H3>
-        <StyledHr my={4} borderColor="black.200" />
+        <SettingsTitle mb={50}>{this.props.title}</SettingsTitle>
         {displayCustomContributionsSettings && (
           <React.Fragment>
-            <H4 mb={3}>
-              <FormattedMessage id="ContributionType.Custom" defaultMessage="Custom contribution" />
-            </H4>
+            <SettingsSectionTitle>
+              <FormattedMessage id="ContributionsType.Flexible" defaultMessage="Flexible Contributions" />
+            </SettingsSectionTitle>
             <Mutation mutation={editCollectiveSettingsMutation}>
               {(editSettings, { loading }) => (
                 <Flex flexWrap="wrap">
@@ -424,7 +443,7 @@ class Tiers extends React.Component {
                     <P>
                       <FormattedMessage
                         id="Tiers.CustomTierDescription"
-                        defaultMessage="The custom contribution adds a default tier on your collective that doesn't enforce any minimum amount or interval. This is the easiest way for people to contribute to your Collective, but it cannot be customized."
+                        defaultMessage="A default tier that enables freely customizable contributions, so people can set thier own amount and frequency without limitations. You cannot change the settings or description of this tier, but you can disable it."
                       />
                     </P>
                     <StyledCheckbox
@@ -447,10 +466,9 @@ class Tiers extends React.Component {
                 </Flex>
               )}
             </Mutation>
-            <StyledHr my={4} borderColor="black.200" />
-            <H4 mb={3}>
-              <FormattedMessage id="createCustomTiers" defaultMessage="Create custom tiers" />
-            </H4>
+            <SettingsSectionTitle mt={50}>
+              <FormattedMessage id="createCustomTiers" defaultMessage="Create your own tiers" />
+            </SettingsSectionTitle>
           </React.Fragment>
         )}
 

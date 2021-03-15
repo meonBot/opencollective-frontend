@@ -45,10 +45,12 @@ const Messages = defineMessages({
     id: 'SearchFor',
     defaultMessage: 'Search for {entity}',
   },
+  // eslint-disable-next-line camelcase
   searchForType_2: {
     id: 'SearchFor2',
     defaultMessage: 'Search for {entity1} or {entity2}',
   },
+  // eslint-disable-next-line camelcase
   searchForType_3: {
     id: 'SearchFor3',
     defaultMessage: 'Search for {entity1}, {entity2} or {entity3}',
@@ -119,6 +121,7 @@ const CollectivePickerAsync = ({
       placeholder={placeholder}
       types={types}
       useSearchIcon={true}
+      // Only displays the invite option if no results were found:
       invitable={invitable}
       onInputChange={newTerm => {
         setTerm(newTerm.trim());
@@ -150,6 +153,7 @@ CollectivePickerAsync.propTypes = {
   creatable: PropTypes.bool,
   /** If true, a permanent option to invite a new user will be displayed in the select */
   invitable: PropTypes.bool,
+  onInvite: PropTypes.func,
 };
 
 CollectivePickerAsync.defaultProps = {

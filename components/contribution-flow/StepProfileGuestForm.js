@@ -6,9 +6,8 @@ import { isEmail } from 'validator';
 
 import Container from '../Container';
 import { Box, Flex } from '../Grid';
-import { getI18nLink } from '../I18nFormatters';
+import I18nFormatters from '../I18nFormatters';
 import InputTypeCountry from '../InputTypeCountry';
-import Link from '../Link';
 import StyledButton from '../StyledButton';
 import StyledHr from '../StyledHr';
 import StyledInput from '../StyledInput';
@@ -37,15 +36,26 @@ export const validateGuestProfile = (stepProfile, stepDetails) => {
   }
 };
 
-const StepProfileGuestForm = ({ stepDetails, onChange, data, onSignInClick }) => {
+const StepProfileGuestForm = ({ stepDetails, onChange, data, defaultEmail, defaultName, isEmbed, onSignInClick }) => {
   const totalAmount = getTotalAmount(stepDetails);
   const dispatchChange = (field, value) => {
     const newData = set({ ...data, isGuest: true }, field, value);
     onChange({ stepProfile: newData });
   };
 
+  React.useEffect(() => {
+    if (!data) {
+      if (defaultName) {
+        dispatchChange('name', defaultName);
+      }
+      if (defaultEmail) {
+        dispatchChange('email', defaultEmail);
+      }
+    }
+  }, [defaultEmail, defaultName]);
+
   return (
-    <Container as="fieldset" border="none" width={1} py={3}>
+    <Container border="none" width={1} py={3}>
       <Flex justifyContent="space-between">
         <Box width={1 / 2} mb={3} mr={1}>
           <StyledInputField
@@ -56,15 +66,15 @@ const StepProfileGuestForm = ({ stepDetails, onChange, data, onSignInClick }) =>
             {inputProps => (
               <StyledInput
                 {...inputProps}
-                defaultValue={data?.name}
-                placeholder="i.e. Thomas Anderson"
+                value={data?.name || ''}
+                placeholder="e.g. Thomas Anderson"
                 onChange={e => dispatchChange(e.target.name, e.target.value)}
                 maxLength="255"
               />
             )}
           </StyledInputField>
         </Box>
-        <Box width={1 / 2} mb={3} ml={1}>
+        <Box width="50%" minWidth={185} flex="1 1 50%" mb={3} mr={1}>
           <StyledInputField
             label={<FormattedMessage id="Email" defaultMessage="Email" />}
             htmlFor="email"
@@ -74,8 +84,8 @@ const StepProfileGuestForm = ({ stepDetails, onChange, data, onSignInClick }) =>
             {inputProps => (
               <StyledInput
                 {...inputProps}
-                defaultValue={data?.email}
-                placeholder="i.e. tanderson@thematrix.com"
+                value={data?.email || ''}
+                placeholder="e.g. tanderson@thematrix.com"
                 type="email"
                 onChange={e => dispatchChange(e.target.name, e.target.value)}
               />
@@ -130,38 +140,40 @@ const StepProfileGuestForm = ({ stepDetails, onChange, data, onSignInClick }) =>
           defaultMessage="Your name and contribution will be public."
         />
       </P>
-      <StepProfileInfoMessage amount={totalAmount} />
-      {stepDetails.interval && (
-        <P color="black.500" fontSize="12px" my={3} data-cy="join-conditions">
-          <FormattedMessage
-            id="SignIn.legal"
-            defaultMessage="By joining, you agree to our <tos-link>Terms of Service</tos-link> and <privacy-policy-link>Privacy Policy</privacy-policy-link>."
-            values={{
-              'tos-link': getI18nLink({ as: Link, route: '/tos' }),
-              'privacy-policy-link': getI18nLink({ as: Link, route: '/privacypolicy' }),
-            }}
-          />
-        </P>
+      <StepProfileInfoMessage amount={totalAmount} interval={stepDetails.interval} />
+      <P color="black.500" fontSize="12px" mt={4} data-cy="join-conditions">
+        <FormattedMessage
+          id="SignIn.legal"
+          defaultMessage="By joining, you agree to our <TOSLink>Terms of Service</TOSLink> and <PrivacyPolicyLink>Privacy Policy</PrivacyPolicyLink>."
+          values={I18nFormatters}
+        />
+      </P>
+      {!isEmbed && (
+        <React.Fragment>
+          <Flex width={1} alignItems="center" justifyContent="center" mb={3} mt={3}>
+            <StyledHr width="100%" borderColor="black.300" />
+          </Flex>
+          <Flex alignItems="center" mt={3}>
+            <P fontSize="14px" mr={2} color="black.700">
+              <FormattedMessage
+                id="GuestForm.contributeAsOrg"
+                defaultMessage="Want to contribute as an organization?"
+              />
+            </P>
+            <StyledButton
+              onClick={onSignInClick}
+              type="button"
+              buttonStyle="secondary"
+              buttonSize="tiny"
+              isBorderless
+              data-cy="cf-profile-signin-btn"
+            >
+              <FormattedMessage id="signInOrJoinFree" defaultMessage="Sign in or join free" />
+              &nbsp;→
+            </StyledButton>
+          </Flex>
+        </React.Fragment>
       )}
-      <Flex width={1} alignItems="center" justifyContent="center" my={3}>
-        <StyledHr width="100%" borderColor="black.300" />
-      </Flex>
-      <Flex alignItems="center" mt={3}>
-        <P fontSize="14px" mr={2}>
-          <FormattedMessage id="CreateProfile.AlreadyHaveAnAccount" defaultMessage="Already have an account?" />
-        </P>
-        <StyledButton
-          onClick={onSignInClick}
-          type="button"
-          buttonStyle="secondary"
-          buttonSize="tiny"
-          isBorderless
-          data-cy="cf-profile-signin-btn"
-        >
-          <FormattedMessage id="signIn" defaultMessage="Sign In" />
-          &nbsp;→
-        </StyledButton>
-      </Flex>
     </Container>
   );
 };
@@ -174,6 +186,9 @@ StepProfileGuestForm.propTypes = {
   data: PropTypes.object,
   onChange: PropTypes.func,
   onSignInClick: PropTypes.func,
+  defaultEmail: PropTypes.string,
+  defaultName: PropTypes.string,
+  isEmbed: PropTypes.bool,
 };
 
 export default StepProfileGuestForm;

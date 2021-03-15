@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import styled, { css } from 'styled-components';
+
+import useGlobalBlur from '../lib/hooks/useGlobalBlur';
+import useKeyBoardShortcut, { ESCAPE_KEY } from '../lib/hooks/useKeyboardKey';
 
 export const DropdownContent = styled.div`
   display: none;
@@ -42,14 +45,64 @@ export const DropdownArrow = styled('div')`
   }
 `;
 
-export const Dropdown = styled(({ children, ...props }) => {
+/**
+ * Accessible, CSS-first dropdown.
+ *
+ * When using `click` as a `trigger` you must pass a function as `children` and
+ * make sure you pass down the `triggerProps` and `dropdownProps`.
+ * The ref must be on the wrapping div in order to work in Firefox (Mac) and Safari.
+ */
+export const Dropdown = styled(({ children, trigger, ...props }) => {
+  const dropdownRef = useRef();
   const [isDisplayed, setDisplayed] = React.useState(false);
+  const closeDropdown = React.useCallback(() => {
+    if (isDisplayed) {
+      setDisplayed(false);
+    }
+  }, [isDisplayed]);
+
+  useGlobalBlur(dropdownRef, outside => {
+    if (outside && isDisplayed) {
+      setTimeout(() => {
+        setDisplayed(false);
+      }, 50);
+    }
+  });
+
+  // Closes the modal upon the `ESC` key press.
+  useKeyBoardShortcut({ callback: closeDropdown, keyMatch: ESCAPE_KEY });
+
+  if (typeof children === 'function' && trigger === 'click') {
+    return (
+      <div ref={dropdownRef} {...props} data-expanded={isDisplayed}>
+        {children({
+          isDisplayed,
+          triggerProps: {
+            onClick: () => {
+              setDisplayed(!isDisplayed);
+            },
+          },
+          dropdownProps: {
+            onClick: () => setTimeout(closeDropdown, 50),
+            onBlur: () =>
+              setTimeout(() => {
+                if (!document.activeElement || !dropdownRef.current?.contains(document.activeElement)) {
+                  closeDropdown();
+                }
+              }, 50),
+          },
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       tabIndex={0}
+      trigger={trigger}
       {...props}
       onFocus={() => setTimeout(() => setDisplayed(true), 50)}
-      onBlur={() => setTimeout(() => setDisplayed(false), 50)}
+      onBlur={() => setTimeout(closeDropdown, 50)}
       onClick={e => {
         if (isDisplayed) {
           if (document.activeElement?.contains(e.target)) {
@@ -76,9 +129,7 @@ export const Dropdown = styled(({ children, ...props }) => {
           }
         `
       : css`
-          &:active,
-          &:focus,
-          &:focus-within {
+          &[data-expanded='true'] {
             ${DropdownContent}, ${DropdownArrow} {
               display: block;
             }

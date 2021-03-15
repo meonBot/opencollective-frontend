@@ -1,23 +1,16 @@
 import { randomSlug } from '../support/faker';
 
-const hasNewNavbar = Cypress.env('NEW_COLLECTIVE_NAVBAR');
-
 describe('host dashboard', () => {
+  let user;
+
   before(() => {
-    cy.signup({ redirect: '/brusselstogetherasbl' });
+    cy.signup({ redirect: '/brusselstogetherasbl' }).then(u => (user = u));
   });
 
   describe('pending applications', () => {
     it('mark pending application approved', () => {
       const collectiveSlug = randomSlug();
-
-      if (hasNewNavbar) {
-        cy.getByDataCy('collective-navbar-actions-btn').click();
-        cy.getByDataCy('host-apply-btn').click({ force: true });
-      } else {
-        cy.get('[data-cy="host-apply-btn"]:visible').click();
-      }
-
+      cy.get('[data-cy="host-apply-btn"]:visible').click();
       cy.getByDataCy('host-apply-collective-picker').click();
       cy.getByDataCy('host-apply-new-collective-link').click();
       cy.get(`input[name="name"]`).type('Cavies United');
@@ -26,7 +19,7 @@ describe('host dashboard', () => {
       cy.getByDataCy('checkbox-tos').click();
       cy.wait(300);
       cy.get('button[type="submit"]').click();
-      cy.contains('The Cavies United Collective has been created!');
+      cy.contains('Cavies United has been created!');
       cy.login({ redirect: '/brusselstogetherasbl/dashboard' });
       cy.get('[data-cy="host-dashboard-menu-bar"]').contains('Pending applications').click();
       cy.get(`[data-cy="${collectiveSlug}-approve"]`).click();
@@ -48,12 +41,16 @@ describe('host dashboard', () => {
 
     before(() => {
       // 207 - BrusselsTogether
-      cy.createExpense({ collective: { id: 207 } }).then(e => (expense = e));
+      cy.createExpense({
+        userEmail: user.email,
+        account: { legacyId: 207 },
+        payee: { legacyId: user.CollectiveId },
+      }).then(e => (expense = e));
     });
 
     it('Process expense', () => {
       cy.login({ redirect: '/brusselstogetherasbl/dashboard/expenses' });
-      cy.getByDataCy(`expense-container-${expense.id}`).as('currentExpense');
+      cy.getByDataCy(`expense-container-${expense.legacyId}`).as('currentExpense');
 
       // Defaults to pending, approve it
       cy.get('@currentExpense').find('[data-cy="expense-status-msg"]').contains('Pending');

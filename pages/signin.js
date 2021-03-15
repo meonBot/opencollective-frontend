@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { mapValues } from 'lodash';
+import { withRouter } from 'next/router';
 import { FormattedMessage } from 'react-intl';
+import { isEmail } from 'validator';
 
 import { getFromLocalStorage, LOCAL_STORAGE_KEYS } from '../lib/local-storage';
 import { isSuspiciousUserAgent, RobotsDetector } from '../lib/robots-detector';
 import { isValidRelativeUrl } from '../lib/utils';
-import { Router } from '../server/pages';
 
 import Body from '../components/Body';
 import Footer from '../components/Footer';
@@ -19,24 +20,27 @@ import { P } from '../components/Text';
 import { withUser } from '../components/UserProvider';
 
 class SigninPage extends React.Component {
-  static getInitialProps({ query: { token, next, form }, req }) {
+  static getInitialProps({ query: { token, next, form, email }, req }) {
     // Decode next URL if URI encoded
     if (next && next.startsWith('%2F')) {
       next = decodeURIComponent(next);
     }
 
     next = next && isValidRelativeUrl(next) ? next : null;
+    email = email && decodeURIComponent(email);
     return {
       token,
       next,
       form: form || 'signin',
       isSuspiciousUserAgent: isSuspiciousUserAgent(req?.get('User-Agent')),
+      email: email && isEmail(email) ? email : null,
     };
   }
 
   static propTypes = {
     form: PropTypes.oneOf(['signin', 'create-account']).isRequired,
     token: PropTypes.string,
+    email: PropTypes.string,
     next: PropTypes.string,
     login: PropTypes.func,
     errorLoggedInUser: PropTypes.string,
@@ -44,6 +48,7 @@ class SigninPage extends React.Component {
     loadingLoggedInUser: PropTypes.bool,
     enforceTwoFactorAuthForLoggedInUser: PropTypes.bool,
     isSuspiciousUserAgent: PropTypes.bool,
+    router: PropTypes.object,
   };
 
   constructor(props) {
@@ -71,7 +76,7 @@ class SigninPage extends React.Component {
       // Avoid redirect loop: replace '/signin' redirects by '/'
       const { next } = this.props;
       const redirect = next && next.match(/^\/?signin[?/]?/) ? null : next;
-      await Router.replaceRoute(redirect || '/');
+      await this.props.router.replace(redirect || '/');
       window.scroll(0, 0);
     } else if (this.props.token && oldProps.token !== this.props.token) {
       // --- There's a new token in town 🤠 ---
@@ -135,7 +140,9 @@ class SigninPage extends React.Component {
       return (
         <Flex flexDirection="column" alignItems="center" px={3} pb={3}>
           <P fontSize="30px" mb={3}>
-            🤖
+            <span role="img" aria-label="Robot Emoji">
+              🤖
+            </span>
           </P>
           <P mb={5} textAlign="center">
             <FormattedMessage
@@ -183,13 +190,20 @@ class SigninPage extends React.Component {
           </MessageBox>
         )}
         <SignInOrJoinFree
+          email={this.props.email}
           redirect={next || '/'}
           form={form}
           routes={this.getRoutes()}
           enforceTwoFactorAuthForLoggedInUser={enforceTwoFactorAuthForLoggedInUser}
-          submitTwoFactorAuthenticatorCode={values => {
+          submitTwoFactorAuthenticatorCode={twoFactorAuthenticatorCode => {
             const localStorage2FAToken = getFromLocalStorage(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
-            return this.props.login(localStorage2FAToken, values.twoFactorAuthenticatorCode);
+            return this.props.login(localStorage2FAToken, {
+              twoFactorAuthenticatorCode,
+            });
+          }}
+          submitRecoveryCode={recoveryCode => {
+            const localStorage2FAToken = getFromLocalStorage(LOCAL_STORAGE_KEYS.ACCESS_TOKEN);
+            return this.props.login(localStorage2FAToken, { recoveryCode });
           }}
         />
       </React.Fragment>
@@ -214,4 +228,4 @@ class SigninPage extends React.Component {
   }
 }
 
-export default withUser(SigninPage);
+export default withUser(withRouter(SigninPage));

@@ -48,10 +48,13 @@ export const collectivePageQuery = gql`
       stats {
         id
         balance
+        balanceWithBlockedFunds
         yearlyBudget
         updates
         activeRecurringContributions
         totalAmountReceived(periodInMonths: 12)
+        totalAmountRaised: totalAmountReceived
+        totalNetAmountRaised: totalNetAmountReceived
         backers {
           id
           all
@@ -79,6 +82,9 @@ export const collectivePageQuery = gql`
         backgroundImageUrl
         twitterHandle
         type
+        coreContributors: contributors(roles: [ADMIN, MEMBER]) {
+          ...ContributorsFields
+        }
       }
       host {
         id
@@ -86,6 +92,13 @@ export const collectivePageQuery = gql`
         slug
         type
         settings
+        plan {
+          id
+          hostFees
+          transferwisePayoutsLimit
+          transferwisePayouts
+          hostFeeSharePercent
+        }
       }
       coreContributors: contributors(roles: [ADMIN, MEMBER]) {
         ...ContributorsFields
@@ -98,7 +111,7 @@ export const collectivePageQuery = gql`
         name
         slug
         description
-        hasLongDescription
+        useStandalonePage
         goal
         interval
         currency
@@ -214,7 +227,7 @@ export const collectivePageQuery = gql`
         ...UpdatesFields
       }
       plan {
-        hostDashboard
+        id
         hostedCollectives
         hostedCollectivesLimit
       }

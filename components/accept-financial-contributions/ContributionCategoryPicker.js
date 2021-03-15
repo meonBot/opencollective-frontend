@@ -83,14 +83,14 @@ class ContributionCategoryPicker extends React.Component {
       ourselvesInfo: {
         id: 'acceptContributions.picker.ourselvesInfo',
         defaultMessage:
-          'Simply connect a bank account to your collective. You will be responsible for accounting, taxes, payments, and liability.',
+          'Simply connect a bank account to your Collective. You will be responsible for accounting, taxes, payments, and liability. Choose this option if you have a single Collective and want to hold funds for it yourself.',
       },
-      host: { id: 'acceptContributions.picker.host', defaultMessage: 'A fiscal host' },
+      host: { id: 'acceptContributions.picker.host', defaultMessage: 'A Fiscal Host' },
       organization: { id: 'acceptContributions.organization.subtitle', defaultMessage: 'Our organization' },
       organizationInfo: {
         id: 'acceptContributions.picker.organizationInfo',
         defaultMessage:
-          'Use an organization you own as Fiscal Host  and host multiple collectives. The organization will be responsible for their accounting, taxes, payments, and liability.',
+          'Create a Fiscal Host to hold funds for multiple Collectives, or select a one that you already manage. Choose this option if you have a legal entity set up to handle accounting, taxes, payments, and liability for multiple Collectives.',
       },
     });
   }
@@ -100,7 +100,7 @@ class ContributionCategoryPicker extends React.Component {
 
     return (
       <div>
-        <CollectiveNavbar collective={collective} onlyInfos={true} />
+        <CollectiveNavbar collective={collective} />
         <Box mb={4} mt={5}>
           <H1
             fontSize={['20px', '32px']}
@@ -124,13 +124,7 @@ class ContributionCategoryPicker extends React.Component {
                     <Image src={acceptMyselfIllustration} alt={intl.formatMessage(this.messages.ourselves)} />
                     <HoverImage src={acceptMyselfHoverIllustration} alt={intl.formatMessage(this.messages.ourselves)} />
                   </Box>
-                  <Link
-                    route="accept-financial-contributions"
-                    params={{
-                      slug: router.query.slug,
-                      path: 'ourselves',
-                    }}
-                  >
+                  <Link href={`/${router.query.slug}/accept-financial-contributions/ourselves`}>
                     <StyledButton
                       fontSize="13px"
                       buttonStyle="dark"
@@ -166,13 +160,7 @@ class ContributionCategoryPicker extends React.Component {
                       alt={intl.formatMessage(this.messages.organization)}
                     />
                   </Box>
-                  <Link
-                    route="accept-financial-contributions"
-                    params={{
-                      slug: router.query.slug,
-                      path: 'organization',
-                    }}
-                  >
+                  <Link href={`/${router.query.slug}/accept-financial-contributions/organization`}>
                     <StyledButton
                       fontSize="13px"
                       buttonStyle="dark"
@@ -204,13 +192,7 @@ class ContributionCategoryPicker extends React.Component {
                     <Image src={acceptHostIllustration} alt={intl.formatMessage(this.messages.host)} />
                     <HoverImage src={acceptHostHoverIllustration} alt={intl.formatMessage(this.messages.host)} />
                   </Box>
-                  <Link
-                    route="accept-financial-contributions"
-                    params={{
-                      slug: router.query.slug,
-                      path: 'host',
-                    }}
-                  >
+                  <Link href={`/${router.query.slug}/accept-financial-contributions/host`}>
                     <StyledButton
                       fontSize="13px"
                       buttonStyle="dark"
@@ -227,7 +209,7 @@ class ContributionCategoryPicker extends React.Component {
                     <P color="black.600" textAlign="center" mt={[2, 3]} fontSize={['12px', '14px']}>
                       <FormattedMessage
                         id="acceptContributions.picker.hostInfo"
-                        defaultMessage="Apply to a Fiscal Host. Fiscal Hosts hold money on behalf of Collectives and take care of accounting, taxes, payments, and liability for them. {moreInfo}"
+                        defaultMessage="Apply to join a Fiscal Host, who will hold money on behalf of your Collective. Choose this option if you want someone else to take care of banking, accounting, taxes, payments, and liability. {moreInfo}"
                         values={{
                           moreInfo: (
                             <StyledLink href={moreInfoHostsLink} openInNewTab>

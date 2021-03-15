@@ -9,14 +9,14 @@ import StyledButton from '../StyledButton';
 
 import { STEPS } from './constants';
 
-class NewContributionFlowButtons extends React.Component {
+class ContributionFlowButtons extends React.Component {
   static propTypes = {
     goNext: PropTypes.func,
     goBack: PropTypes.func,
     step: PropTypes.shape({ name: PropTypes.string }),
     prevStep: PropTypes.shape({ name: PropTypes.string }),
     nextStep: PropTypes.shape({ name: PropTypes.string }),
-    isRecurringContributionLoggedOut: PropTypes.bool,
+    disableNext: PropTypes.bool,
     isValidating: PropTypes.bool,
     /** If provided, the PayPal button will be displayed in place of the regular submit */
     paypalButtonProps: PropTypes.object,
@@ -47,28 +47,21 @@ class NewContributionFlowButtons extends React.Component {
     }
   }
 
-  getNextButtonLabel() {
-    const { step, nextStep, isRecurringContributionLoggedOut } = this.props;
-    if (step.name === STEPS.PROFILE && isRecurringContributionLoggedOut) {
-      return <FormattedMessage id="NewContributionFlow.JoinAndGoNext" defaultMessage="Join and go next" />;
-    } else {
-      return this.getStepLabel(nextStep) || <FormattedMessage id="contribute.nextStep" defaultMessage="Next step" />;
-    }
-  }
-
   render() {
     const { goBack, isValidating, prevStep, nextStep, paypalButtonProps, totalAmount, currency } = this.props;
     return (
-      <Flex justifyContent={'center'} mt={3}>
+      <Flex flexWrap="wrap" justifyContent="center">
         <Fragment>
           {goBack && (
             <StyledButton
-              minWidth={125}
+              mx={[1, null, 2]}
+              minWidth={!nextStep ? 185 : 145}
               onClick={goBack}
               color="black.600"
               disabled={isValidating}
               data-cy="cf-prev-step"
               type="button"
+              mt={2}
             >
               &larr;{' '}
               {this.getStepLabel(prevStep) || <FormattedMessage id="Pagination.Prev" defaultMessage="Previous" />}
@@ -76,16 +69,23 @@ class NewContributionFlowButtons extends React.Component {
           )}
           {!paypalButtonProps || nextStep ? (
             <StyledButton
-              ml={17}
-              minWidth={!nextStep ? 185 : 125}
+              mt={2}
+              mx={[1, null, 2]}
+              minWidth={!nextStep ? 185 : 145}
               buttonStyle="primary"
               onClick={this.goNext}
               loading={isValidating || this.state.isLoadingNext}
               data-cy="cf-next-step"
+              disabled={this.props.disableNext}
               type="submit"
             >
               {nextStep ? (
-                <React.Fragment>{this.getNextButtonLabel()} &rarr;</React.Fragment>
+                <React.Fragment>
+                  {this.getStepLabel(nextStep) || (
+                    <FormattedMessage id="contribute.nextStep" defaultMessage="Next step" />
+                  )}{' '}
+                  &rarr;
+                </React.Fragment>
               ) : totalAmount ? (
                 <FormattedMessage
                   id="contribute.amount"
@@ -99,7 +99,7 @@ class NewContributionFlowButtons extends React.Component {
               )}
             </StyledButton>
           ) : (
-            <Box ml={17} minWidth={200}>
+            <Box mx={[1, null, 2]} minWidth={200} mt={2}>
               <PayWithPaypalButton {...paypalButtonProps} />
             </Box>
           )}
@@ -109,4 +109,4 @@ class NewContributionFlowButtons extends React.Component {
   }
 }
 
-export default NewContributionFlowButtons;
+export default ContributionFlowButtons;

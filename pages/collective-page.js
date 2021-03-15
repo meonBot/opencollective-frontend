@@ -52,7 +52,7 @@ const GlobalStyles = createGlobalStyle`
  * to render `components/collective-page` with everything needed.
  */
 class CollectivePage extends React.Component {
-  static async getInitialProps({ client, req, res, query: { slug, status, step, mode, navbarVersion } }) {
+  static async getInitialProps({ client, req, res, query: { slug, status, step, mode } }) {
     if (res && req && (req.language || req.locale === 'en')) {
       res.set('Cache-Control', 'public, s-maxage=300');
     }
@@ -61,9 +61,7 @@ class CollectivePage extends React.Component {
 
     // If on server side
     if (req) {
-      req.noStyledJsx = true;
-      const hasNewCollectiveNavbar = navbarVersion === 'v2';
-      await preloadCollectivePageGraphlQueries(slug, client, hasNewCollectiveNavbar);
+      await preloadCollectivePageGraphlQueries(slug, client);
       skipDataFromTree = true;
     }
 
@@ -222,7 +220,7 @@ class CollectivePage extends React.Component {
                 />
               )}
             </CollectiveThemeProvider>
-            {LoggedInUser && mode === 'onboarding' && (
+            {mode === 'onboarding' && LoggedInUser?.canEditCollective(collective) && (
               <OnboardingModal
                 showOnboardingModal={showOnboardingModal}
                 setShowOnboardingModal={this.setShowOnboardingModal}

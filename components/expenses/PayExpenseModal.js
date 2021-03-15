@@ -119,7 +119,15 @@ const PayExpenseModal = ({ onClose, onSubmit, expense, collective, host, LoggedI
   const payoutMethodLabel = getPayoutLabel(intl, payoutMethodType);
 
   return (
-    <StyledModal show onClose={onClose} width="100%" minWidth={280} maxWidth={334} data-cy="pay-expense-modal">
+    <StyledModal
+      show
+      onClose={onClose}
+      width="100%"
+      minWidth={280}
+      maxWidth={334}
+      data-cy="pay-expense-modal"
+      trapFocus
+    >
       <ModalHeader>
         <H4 fontSize="20px" fontWeight="700">
           <FormattedMessage id="PayExpenseTitle" defaultMessage="Pay expense" />
@@ -221,7 +229,7 @@ const PayExpenseModal = ({ onClose, onSubmit, expense, collective, host, LoggedI
           )}
           <AmountLine borderTop="1px solid #4E5052" pt={11}>
             <Label color="black.900" fontWeight="500">
-              {formik.values.paymentProcessorFee !== null && !formik.values.forceManual ? (
+              {formik.values.paymentProcessorFee !== null ? (
                 <FormattedMessage id="TotalAmount" defaultMessage="Total amount" />
               ) : (
                 <FormattedMessage id="TotalAmountWithoutFee" defaultMessage="Total amount (without fees)" />
@@ -241,23 +249,22 @@ const PayExpenseModal = ({ onClose, onSubmit, expense, collective, host, LoggedI
             {error}
             <br />
             {/** TODO: Add a proper ID/Type to detect this error */}
-            {error.startsWith('Not enough funds in your existing Paypal preapproval') && (
-              <StyledLink as={Link} route="host.dashboard" params={{ hostCollectiveSlug: host.slug }}>
+            {error.startsWith('Insufficient Paypal balance') && (
+              <StyledLink as={Link} href={`/${host.slug}/dashboard`}>
                 <FormattedMessage
                   id="PayExpenseModal.RefillBalanceError"
-                  defaultMessage="Refill balance from dashboard"
+                  defaultMessage="Refill your balance from the Host dashboard"
                 />
               </StyledLink>
             )}
             {error.startsWith('Host has two-factor authentication enabled for large payouts.') && (
               <FormattedMessage
                 id="PayExpenseModal.HostTwoFactorAuthEnabled"
-                defaultMessage="Please go to your <SettingsLink>account settings</SettingsLink> to enable two-factor authentication on your account."
+                defaultMessage="Please go to your <SettingsLink>settings</SettingsLink> to enable two-factor authentication for your account."
                 values={{
                   SettingsLink: getI18nLink({
                     as: Link,
-                    route: 'editCollective',
-                    params: { slug: LoggedInUser.collective.slug, section: EDIT_COLLECTIVE_SECTIONS.TWO_FACTOR_AUTH },
+                    href: `${LoggedInUser.collective.slug}/edit/${EDIT_COLLECTIVE_SECTIONS.TWO_FACTOR_AUTH}`,
                     openInNewTab: true,
                   }),
                 }}
@@ -304,7 +311,7 @@ const PayExpenseModal = ({ onClose, onSubmit, expense, collective, host, LoggedI
             <P mt={2} fontSize="12px" lineHeight="18px">
               <FormattedMessage
                 id="PayExpenseModal.ManualPayoutWarning"
-                defaultMessage="By clicking below you are acknowledging that you have already paid this expense via the {payoutMethod} dashboard directly."
+                defaultMessage="By clicking below, you acknowledge that this expense has already been paid via {payoutMethod}."
                 values={{ payoutMethod: payoutMethodLabel }}
               />
             </P>

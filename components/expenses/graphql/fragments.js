@@ -12,6 +12,7 @@ export const loggedInAccountExpensePayoutFieldsFragment = gqlV2/* GraphQL */ `
     location {
       address
       country
+      structured
     }
     payoutMethods {
       id
@@ -47,6 +48,7 @@ export const loggedInAccountExpensePayoutFieldsFragment = gqlV2/* GraphQL */ `
           location {
             address
             country
+            structured
           }
           payoutMethods {
             id
@@ -85,6 +87,7 @@ export const expenseHostFields = gqlV2/* GraphQL */ `
     }
     supportedPayoutMethods
     plan {
+      id
       transferwisePayouts
       transferwisePayoutsLimit
     }
@@ -145,6 +148,7 @@ export const expensePageExpenseFieldsFragment = gqlV2/* GraphQL */ `
     payeeLocation {
       address
       country
+      structured
     }
     createdByAccount {
       id
@@ -180,8 +184,11 @@ export const expensePageExpenseFieldsFragment = gqlV2/* GraphQL */ `
         country
       }
 
-      ... on AccountWithContributions {
-        balance
+      stats {
+        balanceWithBlockedFunds {
+          valueInCents
+          currency
+        }
       }
 
       ... on AccountWithHost {
@@ -196,7 +203,6 @@ export const expensePageExpenseFieldsFragment = gqlV2/* GraphQL */ `
       ... on Organization {
         isHost
         isActive
-        balance
         host {
           ...ExpenseHostFields
         }
@@ -281,10 +287,13 @@ export const expensesListFieldsFragment = gqlV2/* GraphQL */ `
       canReject
       canPay
       canMarkAsUnpaid
+      canSeeInvoiceInfo
     }
     payoutMethod {
       id
       type
+      data
+      isSaved
     }
     payee {
       id

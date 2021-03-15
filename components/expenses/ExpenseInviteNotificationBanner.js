@@ -98,7 +98,7 @@ ResendSignInEmailButton.propTypes = {
 
 const ExpenseInviteNotificationBanner = props => {
   return (
-    <StyledCard py={3} px="26px" mb={4} borderStyle={'solid'}>
+    <StyledCard py={3} px="26px" mb={4} borderStyle={'solid'} data-cy="expense-draft-banner">
       <Flex>
         <PidgeonIllustration />
         <Flex ml={[0, 2]} maxWidth="448px" flexDirection="column">
@@ -113,8 +113,7 @@ const ExpenseInviteNotificationBanner = props => {
             {props.createdUser ? (
               <FormattedMessage
                 id="VerifyEmailInstructions"
-                defaultMessage="An email has been sent to {email} with a link to verify your account, this expense will be automatically submitted after your account is verified. If you have not
-                      received the email after a few minutes, please check your spam folder."
+                defaultMessage="A verification email has been sent to {email}. Click the link to complete submitting this expense. If you have not received the email, please check your spam."
                 values={{
                   email: props.createdUser?.email || props.expense.draft?.payee?.name,
                 }}
@@ -122,7 +121,7 @@ const ExpenseInviteNotificationBanner = props => {
             ) : (
               <FormattedMessage
                 id="Expense.InviteIsOnItsWay.Description"
-                defaultMessage="An email has been sent to {email} with the invitation to submit this expense. Only after this person validates his/her email and submit it, the expense would appear in the list."
+                defaultMessage="An invitation to submit this expense has been sent to {email}. Once they confirm and finish the process, it will appear on the expenses list."
                 values={{
                   email: props.expense.draft?.payee?.email || props.expense.draft?.payee?.name,
                 }}

@@ -25,8 +25,12 @@ class ContributionFlowStepContainer extends React.Component {
     onChange: PropTypes.func,
     showFeesOnTop: PropTypes.bool,
     onNewCardFormReady: PropTypes.func,
+    setBraintree: PropTypes.func,
     onSignInClick: PropTypes.func,
     defaultProfileSlug: PropTypes.string,
+    defaultEmail: PropTypes.string,
+    isEmbed: PropTypes.bool,
+    defaultName: PropTypes.string,
     taxes: PropTypes.array,
     step: PropTypes.shape({
       name: PropTypes.string,
@@ -46,12 +50,8 @@ class ContributionFlowStepContainer extends React.Component {
     this.headerMessages = defineMessages({
       details: { id: 'NewContributionFlow.ContributionDetailsTitle', defaultMessage: 'Contribution details' },
       profile: { id: 'contribute.step.contributeAs', defaultMessage: 'Contribute as' },
-      'profile.guest': { id: 'NewContributionFlow.step.contributeAsGuest', defaultMessage: 'Contribute as guest' },
-      'profile.guest.recurrent': {
-        id: 'NewContributionFlow.step.SignUpToContribute',
-        defaultMessage: 'Sign up to contribute recurrently',
-      },
-      payment: { id: 'NewContributionFlow.ChoosePaymentMethod', defaultMessage: 'Choose your payment method' },
+      'profile.guest': { id: 'NewContributionFlow.step.contributeAsGuest', defaultMessage: 'Contribute as a guest' },
+      payment: { id: 'NewContributionFlow.ChoosePaymentMethod', defaultMessage: 'Choose payment method' },
       summary: { id: 'Summary', defaultMessage: 'Summary' },
       blockedContributor: {
         id: 'NewContributionFlow.BlockedContributor.Header',
@@ -61,14 +61,13 @@ class ContributionFlowStepContainer extends React.Component {
   }
 
   renderHeader = (step, LoggedInUser) => {
+    const { intl } = this.props;
     if (step === 'profile' && !LoggedInUser) {
-      return this.props.mainState.stepDetails?.interval
-        ? this.props.intl.formatMessage(this.headerMessages[`profile.guest.recurrent`])
-        : this.props.intl.formatMessage(this.headerMessages[`profile.guest`]);
+      return intl.formatMessage(this.headerMessages[`profile.guest`]);
     } else if (step === 'payment' && this.props.mainState.stepProfile.contributorRejectedCategories) {
-      return this.props.intl.formatMessage(this.headerMessages.blockedContributor);
+      return intl.formatMessage(this.headerMessages.blockedContributor);
     } else if (this.headerMessages[step]) {
-      return this.props.intl.formatMessage(this.headerMessages[step]);
+      return intl.formatMessage(this.headerMessages[step]);
     } else {
       return step;
     }
@@ -121,7 +120,7 @@ class ContributionFlowStepContainer extends React.Component {
   }
 
   renderStep = step => {
-    const { collective, mainState, tier } = this.props;
+    const { collective, mainState, tier, isEmbed } = this.props;
     const { stepProfile, stepDetails, stepSummary, stepPayment } = mainState;
     switch (step) {
       case 'details':
@@ -145,11 +144,13 @@ class ContributionFlowStepContainer extends React.Component {
             stepDetails={stepDetails}
             profiles={options}
             defaultSelectedProfile={defaultSelectedProfile}
+            defaultEmail={this.props.defaultEmail}
+            defaultName={this.props.defaultName}
             onChange={this.props.onChange}
             data={stepProfile}
             canUseIncognito={collective.type !== CollectiveType.EVENT && (!tier || tier.type !== 'TICKET')}
-            defaultProfileSlug={this.props.defaultProfileSlug}
             onSignInClick={this.props.onSignInClick}
+            isEmbed={isEmbed}
           />
         );
       }
@@ -163,6 +164,7 @@ class ContributionFlowStepContainer extends React.Component {
             onChange={this.props.onChange}
             stepPayment={stepPayment}
             onNewCardFormReady={this.props.onNewCardFormReady}
+            setBraintree={this.props.setBraintree}
           />
         );
       case 'summary':

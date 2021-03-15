@@ -13,9 +13,9 @@ import expenseTypes from '../lib/constants/expenseTypes';
 import { formatErrorMessage, generateNotFoundError, getErrorFromGraphqlException } from '../lib/errors';
 import FormPersister from '../lib/form-persister';
 import { API_V2_CONTEXT, gqlV2 } from '../lib/graphql/helpers';
-import { Router } from '../server/pages';
 
 import CollectiveNavbar from '../components/collective-navbar';
+import { collectiveNavbarFieldsFragment } from '../components/collective-page/graphql/fragments';
 import Container from '../components/Container';
 import ContainerOverlay from '../components/ContainerOverlay';
 import ErrorPage from '../components/ErrorPage';
@@ -37,6 +37,7 @@ import PageFeatureNotSupported from '../components/PageFeatureNotSupported';
 import SignInOrJoinFree from '../components/SignInOrJoinFree';
 import StyledButton from '../components/StyledButton';
 import { H1 } from '../components/Text';
+import { TOAST_TYPE, withToasts } from '../components/ToastProvider';
 import { withUser } from '../components/UserProvider';
 
 const STEPS = { FORM: 'FORM', SUMMARY: 'summary' };
@@ -65,6 +66,8 @@ class CreateExpensePage extends React.Component {
     createExpense: PropTypes.func.isRequired,
     /** from apollo */
     draftExpenseAndInviteUser: PropTypes.func.isRequired,
+    /** from withToast */
+    addToast: PropTypes.func.isRequired,
     /** from apollo */
     data: PropTypes.shape({
       loading: PropTypes.bool,
@@ -84,6 +87,9 @@ class CreateExpensePage extends React.Component {
             tag: PropTypes.string.isRequired,
           }),
         ),
+        host: PropTypes.shape({
+          id: PropTypes.string.isRequired,
+        }),
       }),
       loggedInAccount: PropTypes.shape({
         adminMemberships: PropTypes.shape({
@@ -158,41 +164,46 @@ class CreateExpensePage extends React.Component {
   }
 
   onFormSubmit = async expense => {
-    if (expense.payee.isInvite) {
-      const expenseDraft = pick(expense, [
-        'description',
-        'longDescription',
-        'tags',
-        'type',
-        'privateMessage',
-        'invoiceInfo',
-        'recipientNote',
-        'items',
-        'attachedFiles',
-        'payee',
-        'payeeLocation',
-      ]);
-      const result = await this.props.draftExpenseAndInviteUser({
-        variables: {
-          account: { id: this.props.data.account.id },
-          expense: expenseDraft,
-        },
-      });
-      if (this.state.formPersister) {
-        this.state.formPersister.clearValues();
-      }
+    try {
+      if (expense.payee.isInvite) {
+        const expenseDraft = pick(expense, [
+          'description',
+          'longDescription',
+          'tags',
+          'type',
+          'privateMessage',
+          'invoiceInfo',
+          'recipientNote',
+          'items',
+          'attachedFiles',
+          'payee',
+          'payeeLocation',
+          'payoutMethod',
+        ]);
+        const result = await this.props.draftExpenseAndInviteUser({
+          variables: {
+            account: { id: this.props.data.account.id },
+            expense: expenseDraft,
+          },
+        });
+        if (this.state.formPersister) {
+          this.state.formPersister.clearValues();
+        }
 
-      // Redirect to the expense page
-      const legacyExpenseId = result.data.draftExpenseAndInviteUser.legacyId;
-      const { collectiveSlug, parentCollectiveSlug, data } = this.props;
-      await Router.pushRoute(`expense-v2`, {
-        parentCollectiveSlug,
-        collectiveSlug,
-        collectiveType: parentCollectiveSlug ? getCollectiveTypeForUrl(data?.account) : undefined,
-        ExpenseId: legacyExpenseId,
-      });
-    } else {
-      this.setState({ expense, step: STEPS.SUMMARY, isInitialForm: false });
+        // Redirect to the expense page
+        const legacyExpenseId = result.data.draftExpenseAndInviteUser.legacyId;
+        const { collectiveSlug, parentCollectiveSlug, data } = this.props;
+        const parentCollectiveSlugRoute = parentCollectiveSlug ? `${parentCollectiveSlug}/` : '';
+        const collectiveType = parentCollectiveSlug ? getCollectiveTypeForUrl(data?.account) : undefined;
+        const collectiveTypeRoute = collectiveType ? `${collectiveType}/` : '';
+        await this.props.router.push(
+          `${parentCollectiveSlugRoute}${collectiveTypeRoute}${collectiveSlug}/expenses/${legacyExpenseId}`,
+        );
+      } else {
+        this.setState({ expense, step: STEPS.SUMMARY, isInitialForm: false });
+      }
+    } catch (e) {
+      this.setState({ error: getErrorFromGraphqlException(e), isSubmitting: false });
     }
   };
 
@@ -215,13 +226,20 @@ class CreateExpensePage extends React.Component {
       // Redirect to the expense page
       const legacyExpenseId = result.data.createExpense.legacyId;
       const { collectiveSlug, parentCollectiveSlug, data } = this.props;
-      Router.pushRoute(`expense-v2`, {
-        parentCollectiveSlug,
-        collectiveSlug,
-        collectiveType: parentCollectiveSlug ? getCollectiveTypeForUrl(data?.account) : undefined,
-        ExpenseId: legacyExpenseId,
-        createSuccess: true,
+      const parentCollectiveSlugRoute = parentCollectiveSlug ? `${parentCollectiveSlug}/` : '';
+      const collectiveType = parentCollectiveSlug ? getCollectiveTypeForUrl(data?.account) : undefined;
+      const collectiveTypeRoute = collectiveType ? `${collectiveType}/` : '';
+      await this.props.router.push(
+        `${parentCollectiveSlugRoute}${collectiveTypeRoute}${collectiveSlug}/expenses/${legacyExpenseId}`,
+      );
+      this.props.addToast({
+        type: TOAST_TYPE.SUCCESS,
+        title: <FormattedMessage id="Expense.Submitted" defaultMessage="Expense submitted" />,
+        message: (
+          <FormattedMessage id="Expense.SuccessPage" defaultMessage="You can edit or review updates on this page." />
+        ),
       });
+      window.scrollTo(0, 0);
     } catch (e) {
       this.setState({ error: getErrorFromGraphqlException(e), isSubmitting: false });
     }
@@ -248,7 +266,9 @@ class CreateExpensePage extends React.Component {
           account =>
             [USER, ORGANIZATION].includes(account.type) ||
             // Same Host
-            (account.isActive && this.props.data?.account?.host?.id === account.host?.id),
+            (account.isActive && this.props.data?.account?.host?.id === account.host?.id) ||
+            // Self-hosted Collectives
+            (account.isActive && account.id === account.host?.id),
         );
       return [loggedInAccount, ...accountsAdminOf];
     }
@@ -279,7 +299,11 @@ class CreateExpensePage extends React.Component {
     return (
       <Page collective={collective} {...this.getPageMetaData(collective)}>
         <React.Fragment>
-          <CollectiveNavbar collective={collective} isLoading={!collective} />
+          <CollectiveNavbar
+            collective={collective}
+            isLoading={!collective}
+            callsToAction={{ hasSubmitExpense: false, hasRequestGrant: false }}
+          />
           <Container position="relative" minHeight={[null, 800]} ref={this.formTopRef}>
             {!loadingLoggedInUser && !LoggedInUser && (
               <ContainerOverlay
@@ -425,13 +449,19 @@ const createExpensePageQuery = gqlV2/* GraphQL */ `
       currency
       isArchived
       expensePolicy
+      features {
+        ...NavbarFields
+      }
       expensesTags {
         id
         tag
       }
 
-      ... on AccountWithContributions {
-        balance
+      stats {
+        balanceWithBlockedFunds {
+          valueInCents
+          currency
+        }
       }
 
       ... on AccountWithHost {
@@ -444,9 +474,9 @@ const createExpensePageQuery = gqlV2/* GraphQL */ `
       # For Hosts with Budget capabilities
 
       ... on Organization {
-        balance
         isHost
         isActive
+        # NOTE: This will be the account itself in this case
         host {
           ...CreateExpenseHostFields
         }
@@ -459,6 +489,7 @@ const createExpensePageQuery = gqlV2/* GraphQL */ `
 
   ${loggedInAccountExpensePayoutFieldsFragment}
   ${hostFieldsFragment}
+  ${collectiveNavbarFieldsFragment}
 `;
 
 const addCreateExpensePageData = graphql(createExpensePageQuery, {
@@ -502,6 +533,7 @@ const addHoc = compose(
   addCreateExpensePageData,
   addCreateExpenseMutation,
   addDraftExpenseAndInviteUserMutation,
+  withToasts,
   injectIntl,
 );
 

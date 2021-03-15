@@ -33,15 +33,15 @@ const placeholders = {
 };
 
 const messages = defineMessages({
-  nameLabel: { id: 'createProject.form.nameLabel', defaultMessage: "What's the name of your Project?" },
-  slugLabel: { id: 'createCollective.form.slugLabel', defaultMessage: 'What URL would you like?' },
+  nameLabel: { id: 'createProject.form.nameLabel', defaultMessage: 'Project name' },
+  slugLabel: { id: 'createCollective.form.slugLabel', defaultMessage: 'Set your URL' },
   descriptionLabel: {
     id: 'createProject.form.descriptionLabel',
     defaultMessage: "What's the purpose of your Project?",
   },
   descriptionHint: {
-    id: 'createProject.form.descriptionHint',
-    defaultMessage: 'Write a short description of your Project (150 characters max)',
+    id: 'createCollective.form.descriptionHint',
+    defaultMessage: 'Write a short description (150 characters max)',
   },
   descriptionPlaceholder: {
     id: 'create.collective.placeholder',
@@ -108,6 +108,7 @@ class CreateProjectForm extends React.Component {
     return (
       <Flex flexDirection="column" m={[3, 0]}>
         <Container mb={4}>
+          {/** Container here is important to make sure navbar doesn't stay fixed at the top (sticky must be at the same DOM nesting level to work) */}
           <CollectiveNavbar collective={parent} onlyInfos={true} />
         </Container>
         <Flex flexDirection="column" my={[2, 4]}>

@@ -8,10 +8,10 @@ import { withRouter } from 'next/router';
 import { FormattedMessage } from 'react-intl';
 import styled from 'styled-components';
 
+import { CollectiveType } from '../../lib/constants/collectives';
 import { BANK_TRANSFER_DEFAULT_INSTRUCTIONS } from '../../lib/constants/payout-method';
 import { getErrorFromGraphqlException } from '../../lib/errors';
 import { API_V2_CONTEXT, gqlV2 } from '../../lib/graphql/helpers';
-import { Router } from '../../server/pages';
 
 import Avatar from '../Avatar';
 import CollectiveNavbar from '../collective-navbar';
@@ -32,6 +32,8 @@ import StripeOrBankAccountPicker from './StripeOrBankAccountPicker';
 import acceptOrganizationIllustration from '../../public/static/images/create-collective/acceptContributionsOrganizationHoverIllustration.png';
 
 const { TW_API_COLLECTIVE_SLUG } = process.env;
+
+const { ORGANIZATION } = CollectiveType;
 
 const CreateNewOrg = styled(Flex)`
   border: 1px solid lightgray;
@@ -167,7 +169,7 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
     );
 
     const orgs = memberships
-      .filter(m => m.collective.type === 'ORGANIZATION')
+      .filter(m => m.collective.type === ORGANIZATION)
       .sort((a, b) => {
         return a.collective.slug.localeCompare(b.collective.slug);
       });
@@ -182,13 +184,21 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
         this.setState({ loading: true });
         const { data } = values;
         await this.submitBankAccountInformation(data);
-        await this.addHost(collective, organization ? organization : collective);
+        // At this point, we don't need to do anything for Organization
+        // they're supposed to be already a Fiscal Host with budget activated
+        if (collective.type !== ORGANIZATION) {
+          if (organization) {
+            // Apply to the Host organization
+            await this.addHost(collective, organization);
+          } else {
+            // Activate Self Hosting
+            await this.addHost(collective, collective);
+          }
+        }
         await this.props.refetchLoggedInUser();
-        await Router.pushRoute('accept-financial-contributions', {
-          slug: this.props.collective.slug,
-          path: this.props.router.query.path,
-          state: 'success',
-        });
+        await this.props.router.push(
+          `/${this.props.collective.slug}/accept-financial-contributions/${this.props.router.query.path}/success`,
+        );
         window.scrollTo(0, 0);
       } catch (e) {
         this.setState({ loading: false });
@@ -206,7 +216,7 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
 
     return (
       <Fragment>
-        <CollectiveNavbar collective={collective} onlyInfos={true} />
+        <CollectiveNavbar collective={collective} />
         <Box mb={2} mt={5} mx={[2, 6]}>
           <H1
             fontSize={['20px', '32px']}
@@ -313,7 +323,7 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
           )}
           {router.query.method === 'bank' && (
             <Flex flexDirection={['column', 'row']} justifyContent={'space-evenly'} mx={[2, 4]} my={3}>
-              <Box width={1 / 5} display={['none', null, 'block']}></Box>
+              <Box width={1 / 5} display={['none', null, 'block']} />
               <Flex width={[1, 1 / 2]} flexDirection="column" justifyContent="center" alignItems="center" px={3}>
                 <Box alignItems="center">
                   <P color="black.900" textAlign="left" mt={[2, 3]} fontWeight="bold" fontSize="14px">
@@ -322,19 +332,7 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
                   <P color="black.900" textAlign="left" mt={[2, 3]} fontSize="14px">
                     <FormattedMessage
                       id="acceptContributions.HowDoesItWork.details"
-                      defaultMessage="Financial contributors will be able to choose 'Bank transfer' as a payment method. Instructions to make the transfer, which you define, will be emailed to them, along with a unique order ID. Once you receive the money, you can mark the corresponding pending order as paid and the funds will be credited to the Collective's balance."
-                    />
-                  </P>
-                  <P color="black.900" textAlign="left" mt={[2, 3]} fontWeight="bold" fontSize="14px">
-                    <FormattedMessage
-                      id="acceptContributions.definePaymentInstructions"
-                      defaultMessage="Define payment instructions"
-                    />
-                  </P>
-                  <P color="black.900" textAlign="left" mt={[2, 3]} fontSize="14px">
-                    <FormattedMessage
-                      id="acceptContributions.definePaymentInstructionsDetails"
-                      defaultMessage="Include any details contributors will need to send you money, such as: account name and number; IBAN, Swift, or routing codes; bank name and address, etc. The amount and order ID will be automatically included."
+                      defaultMessage="Financial contributors will be able to choose 'Bank transfer' as a payment method, and instructions will be emailed to them. You can confirm once you receive the money, and the funds will be credited to the Collective's balance. You can edit the bank transfer instructions in the 'receiving money' section of your settings."
                     />
                   </P>
                   <Formik initialValues={initialValues} onSubmit={submit}>
@@ -370,10 +368,11 @@ class AcceptContributionsOurselvesOrOrg extends React.Component {
                               minHeight="36px"
                               type="button"
                               onClick={() => {
-                                Router.pushRoute('accept-financial-contributions', {
-                                  slug: this.props.collective.slug,
-                                  path: this.props.router.query.path,
-                                }).then(() => window.scrollTo(0, 0));
+                                this.props.router
+                                  .push(
+                                    `${this.props.collective.slug}/accept-financial-contributions/${this.props.router.query.path}`,
+                                  )
+                                  .then(() => window.scrollTo(0, 0));
                               }}
                             >
                               <FormattedMessage id="actions.cancel" defaultMessage="Cancel" />
@@ -447,9 +446,11 @@ const applyToHostMutation = gqlV2/* GraphQL */ `
     applyToHost(collective: $collective, host: $host) {
       id
       slug
-      host {
-        id
-        slug
+      ... on AccountWithHost {
+        host {
+          id
+          slug
+        }
       }
     }
   }
